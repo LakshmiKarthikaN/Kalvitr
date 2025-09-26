@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="1f4ee90f-e9f1-4d42-92a6-14a7044cc5c5" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/config/MailConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/controller/PasswordResetController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/controller/UserController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/controller/registrationfeature/StudentController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/ApiResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/CreateUserRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/CreateUserResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/ForcedResetRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/ForgotPasswordRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/InviteUserRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/ResetPasswordRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/UserResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/UserStats.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/UsersListResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/ValidateTokenResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/csvuploadfeature/CsvUploadRequestDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/csvuploadfeature/CsvUploadResponseDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/csvuploadfeature/StudentCsvRowDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/emailverifyfeature/EmailVerificationDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/emailverifyfeature/EmailVerificationResponseDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/registration/StudentRegistrationDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/studentspiresponse/ApiResponseDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/entity/Student.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/exception/StudentControllerAdvice.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/repository/StudentRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/EmailService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/PasswordResetService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/UserService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/studentregistration/AuthService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/studentregistration/StudentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/config/WebSecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/config/WebSecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/config/jwthandler/JwtFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/config/jwthandler/JwtFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/config/jwthandler/JwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/config/jwthandler/JwtUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/controller/AdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/controller/AdminController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/controller/AuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/AdminLoginRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/AdminLoginRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/AdminLoginResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/dto/AdminLoginResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/repository/UserRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/AdminService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/AdminService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/impl/AdminServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/impl/AdminServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="31rHmtn80BCXd3FSJlfU1DOHvpU" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.KalvitrackBackendApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
+    &quot;Application.PasswordHasGenerator.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.projectsettings.compiler.annotationProcessors&quot;
+  }
+}</component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1f4ee90f-e9f1-4d42-92a6-14a7044cc5c5" name="Changes" comment="" />
+      <created>1756275433586</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1756275433586</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/KalvitrackBackendApplication.java</url>
+          <line>14</line>
+          <properties class="com.kalvitrack.kalvitrack_backend.KalvitrackBackendApplication">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/impl/AdminServiceImpl.java</url>
+          <line>100</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/service/EmailService.java</url>
+          <line>43</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/kalvitrack/kalvitrack_backend/controller/UserController.java</url>
+          <line>68</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
