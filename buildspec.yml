@@ -4,13 +4,13 @@ phases:
   install:
     runtime-versions:
       java: corretto21
-    commands:
-      - echo "Installing Maven..."
   build:
     commands:
-      - echo "Building the application without running tests..."
+      - echo "Building application..."
       - mvn clean package -DskipTests
+      - echo "Moving jar to root folder..."
+      - mv target/*.jar application.jar
 
 artifacts:
   files:
-    - target/*.jar
+    - application.jar
