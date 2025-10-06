@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto21
+    commands:
+      - echo "Installing Maven..."
+  build:
+    commands:
+      - echo "Building the application..."
+      - mvn clean package -DskipTests
+
+artifacts:
+  files:
+    - target/*.jar

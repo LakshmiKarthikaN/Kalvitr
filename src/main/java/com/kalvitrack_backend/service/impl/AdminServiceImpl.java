@@ -127,7 +127,7 @@ public class AdminServiceImpl implements AdminService {
             resetFailedAttempts(user);
 
             // Generate JWT token for successful login
-            String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+            String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name(),user.getUserId());
 
             // Create successful response
             AdminLoginResponse response = new AdminLoginResponse(
@@ -210,7 +210,7 @@ public class AdminServiceImpl implements AdminService {
 
                 // Reset failed attempts and generate token for successful login
                 resetFailedAttempts(user);
-                String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+                String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name(),user.getUserId());
 
                 log.info("✅ User login successful - Email: {}, Role: {}", user.getEmail(), user.getRole());
 
@@ -249,7 +249,7 @@ public class AdminServiceImpl implements AdminService {
 
                 // Generate JWT token with student role
                 String studentRole = student.getRole() != null ? student.getRole().name() : "STUDENT";
-                String token = jwtUtil.generateToken(student.getEmail(), studentRole);
+                String token = jwtUtil.generateToken(student.getEmail(), studentRole,student.getId());
 
                 log.info("✅ Student login successful - Email: {}, Role: {}", student.getEmail(), studentRole);
 

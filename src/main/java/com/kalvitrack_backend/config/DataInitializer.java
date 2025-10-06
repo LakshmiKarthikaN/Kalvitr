@@ -24,7 +24,8 @@ public class DataInitializer implements CommandLineRunner {
             User admin = new User();
             admin.setEmail("testuser13@gmail.com");
             admin.setHashedPassword(passwordEncoder.encode("Testuser@123")); // ✅ fixed
-            admin.setRole(User.Role.ADMIN); // ✅ enum instead of string
+            admin.setRole(User.Role.ADMIN);
+            admin.setFullName("Admin User");// ✅ enum instead of string
             userRepository.save(admin);
             System.out.println("✅ Default admin user inserted into external DB");
         } else {

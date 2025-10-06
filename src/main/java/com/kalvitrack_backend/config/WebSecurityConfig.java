@@ -70,7 +70,7 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/hr/users").hasRole("HR") // HR sees FACULTY + INTERVIEW_PANELIST
                         .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("ADMIN", "HR") // Fallback endpoint
                         // ✅ PANELIST ENDPOINTS - Allow HR and ADMIN to manage panelists
-                        .requestMatchers("/api/panelists/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN")
+                        .requestMatchers("/api/panelists/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN","FACULTY")
 
                         // ✅ INTERVIEW ENDPOINTS - Updated permissions
                         .requestMatchers(HttpMethod.GET, "/api/interviews").hasAnyRole("HR", "ADMIN", "FACULTY")

@@ -70,7 +70,7 @@ public class StudentService {
 
             // Generate JWT token with student role
             String role = student.getRole() != null ? student.getRole().name() : "STUDENT";
-            String token = jwtUtil.generateToken(student.getEmail(), role);
+            String token = jwtUtil.generateToken(student.getEmail(), student.getRole().toString(),student.getId());
 
             log.info("Student login successful - Email: {}, Role: {}", student.getEmail(), role);
 

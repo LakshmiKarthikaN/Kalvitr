@@ -3,6 +3,7 @@ package com.kalvitrack_backend.config.jwthandler;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -20,20 +21,29 @@ public class JwtUtil {
 
     @Value("${jwt.expiration:3600000}")
     private long EXPIRATION;
+    public String getRoleFromToken(String token) {
+        return extractRole(token);
+    }
+    // Update this method to include userId parameter
+    // Remove the old generateToken method and keep only this one
+    public String generateToken(String email, String role, Long userId) {
+        logger.info("Generating token for email: {} with role: {} and userId: {}", email, role, userId);
 
-    // Generate Token
-    public String generateToken(String email, String role) {
-        logger.info("Generating token for email: {} with role: {}", email, role);
+        if (userId == null) {
+            throw new IllegalArgumentException("userId cannot be null");
+        }
+
         try {
             String token = Jwts.builder()
                     .setSubject(email)
                     .claim("role", role)
-                    .claim("email", email) // Add email as explicit claim too
+                    .claim("email", email)
+                    .claim("userId", userId)  // ← Critical: Include userId
                     .setIssuedAt(new Date())
                     .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
                     .signWith(SignatureAlgorithm.HS256, SECRET)
                     .compact();
-            logger.info("Token generated successfully for {}", email);
+            logger.info("Token generated successfully for {} with userId {}", email, userId);
             return token;
         } catch (Exception e) {
             logger.error("Error generating token: {}", e.getMessage());
@@ -41,6 +51,36 @@ public class JwtUtil {
         }
     }
 
+    // Remove or deprecate the old generateTokenWithUserId method since they're now the same
+    public String getTokenFromRequest(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7); // Remove "Bearer " prefix
+        }
+        return null;
+    }
+
+    public Long getUserIdFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(SECRET)
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            // Make sure you're storing userId in the token when creating it
+            Object userIdObj = claims.get("userId"); // or whatever claim name you use
+
+            if (userIdObj == null) {
+                System.err.println("userId claim not found in token");
+                return null;
+            }
+
+            return Long.parseLong(userIdObj.toString());
+        } catch (Exception e) {
+            System.err.println("Error extracting userId from token: " + e.getMessage());
+            return null;
+        }
+    }
     // Extract claims
     public Claims extractClaims(String token) {
         try {
@@ -121,5 +161,26 @@ public class JwtUtil {
         } catch (Exception e) {
             logger.error("Error debugging token: {}", e.getMessage());
         }
+    }
+
+    public String generateTokenWithUserId(String email, String role, Long userId) {
+        logger.info("Generating token for email: {} with role: {} and userId: {}", email, role, userId);
+        try {
+            String token = Jwts.builder()
+                    .setSubject(email)
+                    .claim("role", role)
+                    .claim("email", email)
+                    .claim("userId", userId) // Add userId as a claim
+                    .setIssuedAt(new Date())
+                    .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
+                    .signWith(SignatureAlgorithm.HS256, SECRET)
+                    .compact();
+            logger.info("Token generated successfully for {} with userId {}", email, userId);
+            return token;
+        } catch (Exception e) {
+            logger.error("Error generating token with userId: {}", e.getMessage());
+            throw e;
+        }
+
     }
 }
