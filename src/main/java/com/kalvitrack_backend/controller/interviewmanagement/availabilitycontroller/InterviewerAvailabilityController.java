@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/panelists")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "http://localhost:5174"})
+@CrossOrigin(origins = {"http://kalvitrack.vercel.app"})
 public class InterviewerAvailabilityController {
 
     @Autowired
