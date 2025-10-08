@@ -148,14 +148,16 @@ public class WebSecurityConfig {
                 "https://kalvitrack.vercel.app",  // ✅ Add your exact Vercel URL
                 "https://kalvitrack-*.vercel.app",
                 "http://localhost:8080/api",
-                "https://*.vercel.app"// Added this
+                "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com",
+                "https://*.vercel.app",
+                "*"// Added this
 
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
