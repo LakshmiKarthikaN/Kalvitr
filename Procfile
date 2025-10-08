@@ -1,1 +1,1 @@
-web: java -jar application.jar --server.port=$PORT
+web: java -Djava.security.egd=file:/dev/./urandom -jar application.jar --server.port=5000
