@@ -145,10 +145,10 @@ public class WebSecurityConfig {
                 "http://localhost:5173",
                 "http://localhost:5174",
                 "http://localhost:8080",
-                "https://kalvitrack.vercel.app/",  // ✅ Add your exact Vercel URL
-                "https://kalvitrack-*.vercel.app/",
+                "https://kalvitrack.vercel.app",  // ✅ Add your exact Vercel URL
+                "https://kalvitrack-*.vercel.app",
                 "http://localhost:8080/api",
-                "https://*.vercel.app/"// Added this
+                "https://*.vercel.app"// Added this
 
         ));
 
