@@ -141,16 +141,11 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://localhost:8080",
-                "https://kalvitrack.vercel.app",  // ✅ Add your exact Vercel URL
-                "https://kalvitrack-*.vercel.app",
-                "http://localhost:8080/api",
-                "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com",
+                "http://localhost:*",
+                "https://kalvitrack.vercel.app",
                 "https://*.vercel.app",
-                "*"// Added this
+                "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com",
+                "https://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com"// Added this
 
         ));
 
