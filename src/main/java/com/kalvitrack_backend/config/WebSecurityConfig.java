@@ -140,20 +140,18 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:5174",
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "https://*.vercel.app",
                 "https://kalvi-track.co.in",
                 "https://www.kalvi-track.co.in",
-                "https://kalvitrack.vercel.app"
+                "https://kalvitrack.vercel.app",
+                "https://d1clpzx8i9nb2e.cloudfront.net"
         ));
 
-
-
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
