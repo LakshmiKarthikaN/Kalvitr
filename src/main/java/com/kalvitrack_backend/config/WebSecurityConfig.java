@@ -39,41 +39,50 @@ public class WebSecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        http
+                // ✅ CORS must be configured BEFORE CSRF
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Allow preflight requests
+                        // ✅ OPTIONS requests MUST be first and permitAll
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ✅ PUBLIC ENDPOINTS - ORDER MATTERS! More specific patterns first
+                        // ✅ PUBLIC ENDPOINTS
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/auth/validate-reset-token",
                                 "/api/students/verify-email",
-                                "/api/students/complete-registration"
+                                "/api/students/complete-registration",
+                                "/health",
+                                "/api/health"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/admin/users").hasRole("ADMIN") // Admin sees HR + FACULTY
+
+                        // Admin endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/admin/users").hasRole("ADMIN")
                         .requestMatchers("/api/auth/admin/force-user-reset/**").hasRole("ADMIN")
 
                         // Password reset endpoints that require authentication
                         .requestMatchers("/api/auth/force-reset-password").hasAnyRole("HR", "FACULTY","INTERVIEW_PANELIST")
                         .requestMatchers("/api/auth/check-password-reset-required").authenticated()
 
-                        // USER MANAGEMENT - Updated for role-based access
+                        // USER MANAGEMENT
                         .requestMatchers(HttpMethod.POST, "/api/users").hasAnyRole("ADMIN", "HR")
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("ADMIN", "HR")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+
                         // ROLE-SPECIFIC USER ENDPOINTS
-                        .requestMatchers(HttpMethod.GET, "/api/hr/users").hasRole("HR") // HR sees FACULTY + INTERVIEW_PANELIST
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("ADMIN", "HR") // Fallback endpoint
-                        // ✅ PANELIST ENDPOINTS - Allow HR and ADMIN to manage panelists
+                        .requestMatchers(HttpMethod.GET, "/api/hr/users").hasRole("HR")
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("ADMIN", "HR")
+
+                        // PANELIST ENDPOINTS
                         .requestMatchers("/api/panelists/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN","FACULTY")
 
-                        // ✅ INTERVIEW ENDPOINTS - Updated permissions
+                        // INTERVIEW ENDPOINTS
                         .requestMatchers(HttpMethod.GET, "/api/interviews").hasAnyRole("HR", "ADMIN", "FACULTY")
                         .requestMatchers(HttpMethod.POST, "/api/interviews/**").hasAnyRole("HR", "ADMIN", "FACULTY")
                         .requestMatchers(HttpMethod.PUT, "/api/interviews/**").hasAnyRole("HR", "ADMIN", "FACULTY")
@@ -93,15 +102,12 @@ public class WebSecurityConfig {
                                 "/api/students/incomplete"
                         ).hasAnyRole("ADMIN", "HR")
 
-                        // Health check
-                        .requestMatchers("/api/health").permitAll()
-
-                        // ✅ ROLE-BASED AUTHORIZATION
+                        // ROLE-BASED AUTHORIZATION
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/hr/**").hasAnyRole("HR", "ADMIN")
                         .requestMatchers("/api/faculty/**").hasAnyRole("FACULTY", "ADMIN")
 
-                        // ✅ STUDENT ENDPOINTS - Updated to handle both ZSGS and PMIS
+                        // STUDENT ENDPOINTS
                         .requestMatchers("/api/students/profile").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
                         .requestMatchers("/api/students/resume").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
                         .requestMatchers("/api/students/my-**").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN")
@@ -115,15 +121,15 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/students/export").hasAnyRole("HR", "ADMIN")
                         .requestMatchers("/api/students/bulk-update").hasAnyRole("HR", "ADMIN")
 
-                        // ✅ PROFILE ENDPOINTS (ZSGS students)
+                        // PROFILE ENDPOINTS
                         .requestMatchers("/api/profile/student/**").hasAnyRole("ZSGS", "ADMIN")
                         .requestMatchers("/api/profile/**").hasAnyRole("HR", "FACULTY", "ADMIN")
 
-                        // ✅ FILE MANAGEMENT
+                        // FILE MANAGEMENT
                         .requestMatchers("/api/files/upload").authenticated()
                         .requestMatchers("/api/files/**").authenticated()
 
-                        // ✅ NOTIFICATIONS
+                        // NOTIFICATIONS
                         .requestMatchers("/api/notifications/**").authenticated()
 
                         // Everything else requires authentication
@@ -131,7 +137,7 @@ public class WebSecurityConfig {
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // ✅ Enable JWT filter for protected endpoints
+        // ✅ JWT filter AFTER the security chain is configured
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -141,20 +147,35 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "https://kalvitrack.vercel.app",
-                "https://d1clpzx8i9nb2e.cloudfront.net",
+        // ✅ Set allowed origins - be explicit
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "https://*.vercel.app",
                 "https://kalvi-track.co.in",
-                "https://www.kalvi-track.co.in"
+                "https://www.kalvi-track.co.in",
+                "https://*.cloudfront.net"
         ));
 
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization", "Content-Type","Content-Length"));
+        // ✅ Allow all standard methods including OPTIONS
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+        ));
+
+        // ✅ Allow all headers
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // ✅ Expose important headers
+        configuration.setExposedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Content-Length",
+                "X-Requested-With"
+        ));
+
+        // ✅ Allow credentials
         configuration.setAllowCredentials(true);
+
+        // ✅ Cache preflight for 1 hour
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
