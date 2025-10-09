@@ -144,7 +144,7 @@ public class WebSecurityConfig {
                 "http://localhost:*",
                 "https://kalvitrack.vercel.app",
                 "https://*.vercel.app",
-                "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com",
+                "https://kalvi-track.co.in",
                 "https://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com"// Added this
 
         ));
