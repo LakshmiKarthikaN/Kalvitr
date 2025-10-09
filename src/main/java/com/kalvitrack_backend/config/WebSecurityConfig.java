@@ -140,14 +140,14 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
+        configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
-                "https://kalvitrack.vercel.app",
                 "https://*.vercel.app",
                 "https://kalvi-track.co.in",
-                "https://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com"// Added this
-
+                "https://www.kalvi-track.co.in",
+                "https://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com"
         ));
+
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
