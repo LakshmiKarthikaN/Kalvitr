@@ -149,7 +149,6 @@ public class WebSecurityConfig {
 
         // ✅ Set allowed origins - be explicit
         configuration.setAllowedOriginPatterns(Arrays.asList(
-                "http://localhost:*",
                 "https://*.vercel.app",
                 "https://kalvi-track.co.in",
                 "https://www.kalvi-track.co.in",

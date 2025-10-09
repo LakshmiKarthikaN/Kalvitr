@@ -31,7 +31,7 @@ import java.util.UUID;
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+@CrossOrigin(origins = {"https://kalvitrack.vercel.app/"})
 public class StudentController {
 
     private final StudentService studentService;

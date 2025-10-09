@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = {" https://kalvitrack.vercel.app"})
+@CrossOrigin(origins = {"https://kalvitrack.vercel.app/"})
 public class AdminController {
 
     @Autowired
