@@ -153,7 +153,8 @@ public class WebSecurityConfig {
                 "https://*.vercel.app",
                 "https://kalvi-track.co.in",
                 "https://www.kalvi-track.co.in",
-                "https://*.cloudfront.net"
+                "https://*.cloudfront.net",
+                "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com"
         ));
 
         // ✅ Allow all standard methods including OPTIONS
