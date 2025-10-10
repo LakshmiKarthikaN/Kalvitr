@@ -151,11 +151,12 @@ public class WebSecurityConfig {
 
 //        List<String> origins = Arrays.asList(allowedOrigins.split(","));
 //        configuration.setAllowedOriginPatterns(origins);
-        configuration.setAllowedOriginPatterns(List.of(
-                "https://*.vercel.app",
-                "https://*.cloudfront.net",
-                "https://*.kalvi-track.co.in",
-                "http://localhost:*"
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
         ));
 
 
