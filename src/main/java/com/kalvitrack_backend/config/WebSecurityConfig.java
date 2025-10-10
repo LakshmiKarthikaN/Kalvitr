@@ -149,7 +149,7 @@ public class WebSecurityConfig {
 
 
         // Also allow pattern matching for dynamic Vercel and CloudFront URLs
-        configuration.setAllowedOriginPatterns(Arrays.asList(
+        configuration.setAllowedOrigins(Arrays.asList(
                 "https://*.vercel.app",
                 "https://*.cloudfront.net",
                 "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com",
