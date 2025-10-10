@@ -152,10 +152,7 @@ public class WebSecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://*.vercel.app",
                 "https://*.cloudfront.net",
-                "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com",
                 "https://kalvitrack.vercel.app",
-                "https://kalvi-track.co.in",
-                "https://www.kalvi-track.co.in",
                 "http://localhost:3000",
                 "http://localhost:5173"
         ));
