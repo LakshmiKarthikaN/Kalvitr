@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -95,6 +96,25 @@ public class AdminController {
             return ResponseEntity.status(500).body(response);
         }
     }
+    @GetMapping("/users")
+    public ResponseEntity<Map<String, Object>> getAllUsers() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // Fetch all users from the repository
+            List<User> users = userRepository.findAll();
+
+            response.put("success", true);
+            response.put("count", users.size());
+            response.put("users", users);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Failed to fetch users: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
     // Create initial admin user if none exists
     @PostMapping("/init")
@@ -144,5 +164,6 @@ public class AdminController {
             response.put("message", "Failed to create admin: " + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
+
     }
 }
