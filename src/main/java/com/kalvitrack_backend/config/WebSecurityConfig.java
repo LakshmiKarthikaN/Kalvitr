@@ -138,6 +138,7 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         // ✅ JWT filter AFTER the security chain is configured
+
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -148,7 +149,7 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // ✅ Set allowed origins - be explicit
-        configuration.setAllowedOriginPatterns(Arrays.asList(
+        configuration.setAllowedOrigins(Arrays.asList(
                 "https://*.vercel.app",
                 "https://kalvi-track.co.in",
                 "https://www.kalvi-track.co.in",
@@ -163,13 +164,17 @@ public class WebSecurityConfig {
 
         // ✅ Allow all headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
-
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
+        ));
         // ✅ Expose important headers
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
-                "Content-Type",
-                "Content-Length",
-                "X-Requested-With"
+                "Content-Type"
         ));
 
         // ✅ Allow credentials

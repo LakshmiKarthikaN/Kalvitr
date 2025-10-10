@@ -82,7 +82,15 @@ public class JwtFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         logger.debug("Processing request - Method: {}, URI: {}", method, requestURI);
-
+        logger.info("=== INCOMING REQUEST ===");
+        logger.info("Method: {}, URI: {}", method, requestURI);
+        logger.info("All Headers:");
+        java.util.Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            logger.info("  {}: {}", headerName, request.getHeader(headerName));
+        }
+        logger.info("========================");
         // Skip OPTIONS requests (CORS preflight)
         if ("OPTIONS".equals(method)) {
             logger.debug("Skipping JWT validation for OPTIONS request");
