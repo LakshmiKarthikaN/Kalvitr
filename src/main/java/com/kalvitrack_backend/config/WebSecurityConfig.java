@@ -147,8 +147,12 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ✅ Set allowed origins - be explicit
-        configuration.setAllowedOrigins(Arrays.asList(
+
+        // Also allow pattern matching for dynamic Vercel and CloudFront URLs
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "https://*.vercel.app",
+                "https://*.cloudfront.net",
+                "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com",
                 "https://kalvitrack.vercel.app",
                 "https://kalvi-track.co.in",
                 "https://www.kalvi-track.co.in",
@@ -156,25 +160,20 @@ public class WebSecurityConfig {
                 "http://localhost:5173"
         ));
 
-        // Also allow pattern matching for dynamic Vercel and CloudFront URLs
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-                "https://*.vercel.app",
-                "https://*.cloudfront.net",
-                "http://kalvitrackweb-env.eba-f54ugkwp.eu-north-1.elasticbeanstalk.com"
-
+        // ✅ Allow all common headers
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "Origin",
+                "Accept"
         ));
-
-
-        // ✅ Allow all headers
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-
 
         // ✅ Expose important headers
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
-                "Content-Length",
-                "X-Requested-With"
+                "Content-Length"
         ));
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
