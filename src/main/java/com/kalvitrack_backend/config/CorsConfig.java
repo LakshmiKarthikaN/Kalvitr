@@ -15,8 +15,8 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins(
-                                "https://kalvitrack.vercel.app", // your frontend domain
-                                "http://localhost:5173"          // for local dev
+                                "https://kalvitrack.vercel.app",
+                                "https://www.kalvi-track.co.in"         // for local dev
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
