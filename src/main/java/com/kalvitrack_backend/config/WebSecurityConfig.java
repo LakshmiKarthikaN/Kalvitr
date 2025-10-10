@@ -162,7 +162,13 @@ public class WebSecurityConfig {
         ));
 
         // ✅ Allow all headers
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "Origin",
+                "Accept",
+                "Cache-Control"));
 
         // ✅ Expose important headers
         configuration.setExposedHeaders(Arrays.asList(
