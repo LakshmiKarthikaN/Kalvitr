@@ -17,7 +17,18 @@ import java.util.List;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = {"https://kalvitrack.vercel.app/"})
+@CrossOrigin(
+        origins = {
+                "https://kalvitrack.vercel.app",
+                "https://kalvi-track.co.in",
+                "https://www.kalvi-track.co.in",
+                "http://localhost:3000",
+                "http://localhost:5173"
+        },
+        allowedHeaders = "*",
+        allowCredentials = "true",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS}
+)
 public class UserController {
 
     private final UserService userService;
