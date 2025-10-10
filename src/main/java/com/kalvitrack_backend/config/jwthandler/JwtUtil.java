@@ -19,7 +19,7 @@ public class JwtUtil {
     @Value("${jwt.secret:mySecretKeyForKalviTrackAppThatIsAtLeast32CharactersLongForHS256Algorithm}")
     private String SECRET;
 
-    @Value("${jwt.expiration:3600000}")
+    @Value("${jwt.expiration:86400000}")
     private long EXPIRATION;
     public String getRoleFromToken(String token) {
         return extractRole(token);
