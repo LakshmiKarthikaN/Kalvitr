@@ -151,9 +151,13 @@ public class WebSecurityConfig {
 
 //        List<String> origins = Arrays.asList(allowedOrigins.split(","));
 //        configuration.setAllowedOriginPatterns(origins);
-        configuration.setAllowedOrigins(List.of( "https://kalvitrack.vercel.app",
-                "https://www.kalvi-track.co.in",
-                "http://localhost:5173"));
+        configuration.setAllowedOriginPatterns(List.of(
+                "https://*.vercel.app",
+                "https://*.cloudfront.net",
+                "https://*.kalvi-track.co.in",
+                "http://localhost:*"
+        ));
+
 
         configuration.setAllowedHeaders(Arrays.asList("*"));
 
@@ -166,17 +170,11 @@ public class WebSecurityConfig {
 //                "http://localhost:5173"
 //        ));
 
-        // ✅ Allow all common headers
-        configuration.setAllowedHeaders(Arrays.asList(
-                "*"
-        ));
 
         // ✅ Expose important headers
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
-                "Content-Type",
-                "Content-Length",
-                "X-Total-Count"
+                "Content-Type"
         ));
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
