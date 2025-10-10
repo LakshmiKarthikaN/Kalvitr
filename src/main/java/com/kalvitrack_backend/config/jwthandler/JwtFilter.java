@@ -108,10 +108,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         // Check for Authorization header
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            logger.debug("No valid Authorization header found for: {}", requestURI);
-            sendUnauthorizedResponse(response, "Missing Authorization", "Authorization header with Bearer token required");
-            return;
+        if (authHeader == null) {
+            authHeader = request.getHeader("authorization"); // Check lowercase
         }
 
         String token = authHeader.substring(7);
