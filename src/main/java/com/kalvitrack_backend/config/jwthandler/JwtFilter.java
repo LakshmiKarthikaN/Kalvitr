@@ -214,6 +214,7 @@ public class JwtFilter extends OncePerRequestFilter {
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+        response.setHeader("Access-Control-Allow-Credentials", "true");
 
         String jsonResponse = String.format(
                 "{\"error\":\"%s\",\"message\":\"%s\",\"success\":false,\"timestamp\":\"%s\",\"status\":401}",
@@ -235,7 +236,13 @@ public class JwtFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         // Additional check to skip filter for certain conditions
         String requestURI = request.getRequestURI();
+        String method = request.getMethod();
 
+        // ✅ CRITICAL: Never filter OPTIONS requests
+        if ("OPTIONS".equals(method)) {
+            logger.debug("✅ shouldNotFilter = true for OPTIONS request");
+            return true;
+        }
         // Skip filtering for static resources and health checks
         if (requestURI.startsWith("/actuator/") ||
                 requestURI.startsWith("/static/") ||
