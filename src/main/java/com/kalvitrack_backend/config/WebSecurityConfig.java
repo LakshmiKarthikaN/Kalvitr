@@ -148,7 +148,16 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
+        configuration.setAllowedOrigins(Arrays.asList(
+                "https://kalvitrack.vercel.app",
+                "https://*.vercel.app",
+                "https://*.cloudfront.net",
+                "http://localhost:3000",
+                "http://localhost:5173"
+        ));
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+        ));
 //        List<String> origins = Arrays.asList(allowedOrigins.split(","));
 //        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedHeaders(List.of(
@@ -159,17 +168,8 @@ public class WebSecurityConfig {
                 "X-Requested-With"
         ));
 
-
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-
         // Also allow pattern matching for dynamic Vercel and CloudFront URLs
-//        configuration.setAllowedOrigins(Arrays.asList(
-//                "https://*.vercel.app",
-//                "https://*.cloudfront.net",
-//                "https://kalvitrack.vercel.app",
-//                "http://localhost:3000",
-//                "http://localhost:5173"
-//        ));
+
 
 
         // ✅ Expose important headers
@@ -177,9 +177,7 @@ public class WebSecurityConfig {
                 "Authorization",
                 "Content-Type"
         ));
-        configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
-        ));
+
 
         // ✅ Allow credentials
         configuration.setAllowCredentials(true);
