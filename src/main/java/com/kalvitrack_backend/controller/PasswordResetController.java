@@ -17,18 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(
-        origins = {
-                "https://kalvitrack.vercel.app",
-                "https://kalvi-track.co.in",
-                "https://www.kalvi-track.co.in",
-                "http://localhost:3000",
-                "http://localhost:5173"
-        },
-        allowedHeaders = "*",
-        allowCredentials = "true",
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS}
-)
+
 public class PasswordResetController {
 
     private static final Logger logger = LoggerFactory.getLogger(PasswordResetController.class);
