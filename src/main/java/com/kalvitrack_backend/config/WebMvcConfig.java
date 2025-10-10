@@ -16,10 +16,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
-
-        registry.addMapping("/**")
-                .allowedOrigins(origins.toArray(new String[0]))
+        // ⚠ Use a narrow mapping instead of /** — avoid double registration
+        registry.addMapping("/internal/**")
+                .allowedOrigins(allowedOrigins.split(","))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization", "Content-Type", "Content-Length", "X-Total-Count")
