@@ -150,7 +150,7 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedHeaders(Arrays.asList("*"));
 
         // Also allow pattern matching for dynamic Vercel and CloudFront URLs
