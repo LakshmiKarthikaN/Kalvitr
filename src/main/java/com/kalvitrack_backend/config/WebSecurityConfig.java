@@ -25,8 +25,8 @@ import java.util.List;
 public class WebSecurityConfig {
 
     private final JwtFilter jwtFilter;
-    @Value("${cors.allowed-origins}")
-    private String allowedOrigins;
+//    @Value("${cors.allowed-origins}")
+//    private String allowedOrigins;
 
     public WebSecurityConfig(JwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
@@ -149,8 +149,10 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        configuration.setAllowedOriginPatterns(origins);
+//        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+//        configuration.setAllowedOriginPatterns(origins);
+        configuration.setAllowedOrigins(List.of("https://kalvitrack.vercel.app"));
+
         configuration.setAllowedHeaders(Arrays.asList("*"));
 
         // Also allow pattern matching for dynamic Vercel and CloudFront URLs

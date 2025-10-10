@@ -15,6 +15,8 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin(origins = "https://kalvitrack.vercel.app")
+
 public class AuthController {
 
     private final AdminService adminService;
