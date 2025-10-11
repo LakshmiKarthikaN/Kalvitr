@@ -152,7 +152,9 @@ public class WebSecurityConfig {
 //
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "https://kalvitrack.vercel.app",
-                "http://localhost:3000", // For local development
+                "http://localhost:3000",
+                "https://www.kalvi-track.co.in",  // ✅ ADD THIS
+                "https://kalvi-track.co.in",
                 "http://localhost:5173"  // Add other local ports if needed
         ));
 
