@@ -149,44 +149,25 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowedOriginPatterns(List.of(
-//                "https://kalvitrack.vercel.app",
-//                "https://*.vercel.app",
-//                "https://*.cloudfront.net",
-//                "http://localhost:[0-9]*"
-//        ));
-        configuration.setAllowedOriginPatterns(Collections.singletonList("*"));
-        configuration.setAllowedMethods(Arrays.asList("*"));
-
-//        configuration.setAllowedMethods(Arrays.asList(
-//                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
-//        ));
-//       List<String> origins = Arrays.asList(allowedOrigins.split(","));
-//        configuration.setAllowedOriginPatterns(origins);
-//        configuration.setAllowedHeaders(List.of(
-//                "Authorization",
-//                "Content-Type",
-//                "Accept",
-//                "Origin",
-//                "X-Requested-With",
-//                "Access-Control-Request-Method",
-//                "Access-Control-Request-Headers"
-//        ));
-        configuration.setAllowedHeaders(List.of("*"
+//
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "https://kalvitrack.vercel.app",
+                "http://localhost:3000", // For local development
+                "http://localhost:5173"  // Add other local ports if needed
         ));
 
-        // Also allow pattern matching for dynamic Vercel and CloudFront URLs
+        // ✅ Allow all standard methods
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+        ));
 
-
-
-        // ✅ Expose important headers
-        configuration.setExposedHeaders(Arrays.asList(
+        // ✅ Allow necessary headers for requests
+        configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
-                "X-Total-Count"
+                "Accept",
+                "Origin"
         ));
-
-
         // ✅ Allow credentials
         configuration.setAllowCredentials(true);
 
