@@ -146,14 +146,11 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // ✅ Allow all origins including CloudFront
-        configuration.setAllowedOriginPatterns(Arrays.asList(
+        configuration.setAllowedOrigins(Arrays.asList(
                 "https://kalvitrack.vercel.app",
-                "http://localhost:3000",
-                "http://localhost:5173",
                 "https://www.kalvi-track.co.in",
                 "https://kalvi-track.co.in",
-                "https://*.cloudfront.net",  // ✅ CloudFront pattern
-                "https://d*.cloudfront.net"   // ✅ Alternative CloudFront pattern
+                "https://d1clpzx8i9nb2e.cloudfront.net" // ✅ exact CloudFront domain
         ));
 
         // ✅ Allow all standard HTTP methods
