@@ -1,6 +1,7 @@
 package com.kalvitrack_backend.config;
 
 import com.kalvitrack_backend.config.jwthandler.JwtFilter;
+import org.apache.catalina.filters.CorsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -145,20 +146,18 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ✅ Allow all origins including CloudFront
+// ✅ Specific origins only (no wildcards when allowCredentials = true)
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://kalvitrack.vercel.app",
                 "https://www.kalvi-track.co.in",
                 "https://kalvi-track.co.in",
-                "https://d1clpzx8i9nb2e.cloudfront.net" // ✅ exact CloudFront domain
+                "https://d1clpzx8i9nb2e.cloudfront.net"
         ));
 
-        // ✅ Allow all standard HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
         ));
 
-        // ✅ Allow necessary headers
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -169,20 +168,18 @@ public class WebSecurityConfig {
                 "Access-Control-Request-Headers"
         ));
 
-        // ✅ Expose headers that client might need
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "X-Total-Count"
         ));
 
-        // ✅ Allow credentials (cookies, auth headers)
+// ✅ Keep credentials if you need them
         configuration.setAllowCredentials(true);
-
-        // ✅ Cache preflight for 1 hour (3600 seconds)
         configuration.setMaxAge(3600L);
 
+// ✅ Apply to all paths
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-}
+    }
