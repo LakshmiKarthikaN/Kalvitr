@@ -36,12 +36,11 @@ public class JwtFilter extends OncePerRequestFilter {
             "/api/auth/hr/login",
             "/api/auth/faculty/login",
             "/api/auth/panelists/login",
-
             "/api/auth/register",
             "/api/auth/forgot-password",
             "/api/auth/reset-password",
             "/api/auth/validate-reset-token",
-            "/api/admin/login", // Legacy endpoint
+            "/api/admin/login",
 
             // Student registration endpoints (public)
             "/api/students/verify-email",
@@ -85,25 +84,26 @@ public class JwtFilter extends OncePerRequestFilter {
         logger.debug("Processing request - Method: {}, URI: {}", method, requestURI);
 
         // ✅ CRITICAL: Skip OPTIONS requests immediately (CORS preflight)
-        if ("OPTIONS".equals(method)) {
-            logger.debug("✅ Skipping JWT validation for OPTIONS request");
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            logger.debug("✅ Skipping JWT validation for OPTIONS request: {}", requestURI);
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Check if this is an excluded path
+        // ✅ CRITICAL: Check if this is an excluded (public) path BEFORE checking for Authorization
         if (isExcludedPath(requestURI)) {
-            logger.debug("Skipping JWT validation for excluded path: {}", requestURI);
+            logger.debug("✅ Public endpoint - skipping JWT validation for: {}", requestURI);
             filterChain.doFilter(request, response);
             return;
         }
 
+        // ✅ CRITICAL: Only require Authorization header for protected endpoints
         String authHeader = request.getHeader("Authorization");
 
-        // Check for Authorization header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            logger.debug("No valid Authorization header found for: {}", requestURI);
-            sendUnauthorizedResponse(request, response, "Missing Authorization", "Authorization header with Bearer token required");
+            logger.warn("❌ No valid Authorization header found for protected endpoint: {}", requestURI);
+            sendUnauthorizedResponse(request, response, "Missing Authorization",
+                    "Authorization header with Bearer token required");
             return;
         }
 
@@ -120,20 +120,23 @@ public class JwtFilter extends OncePerRequestFilter {
 
             // Validate extracted data
             if (email == null || email.trim().isEmpty()) {
-                logger.warn("Email is null or empty in token");
-                sendUnauthorizedResponse(request, response, "Invalid token", "Token does not contain valid email");
+                logger.warn("❌ Email is null or empty in token");
+                sendUnauthorizedResponse(request, response, "Invalid token",
+                        "Token does not contain valid email");
                 return;
             }
 
             if (role == null || role.trim().isEmpty()) {
-                logger.warn("Role is null or empty in token");
-                sendUnauthorizedResponse(request, response, "Invalid token", "Token does not contain valid role");
+                logger.warn("❌ Role is null or empty in token");
+                sendUnauthorizedResponse(request, response, "Invalid token",
+                        "Token does not contain valid role");
                 return;
             }
 
         } catch (Exception e) {
-            logger.error("Failed to extract data from token: {}", e.getMessage());
-            sendUnauthorizedResponse(request, response, "Invalid token", "Token format is invalid or expired");
+            logger.error("❌ Failed to extract data from token: {}", e.getMessage());
+            sendUnauthorizedResponse(request, response, "Invalid token",
+                    "Token format is invalid or expired");
             return;
         }
 
@@ -143,7 +146,7 @@ public class JwtFilter extends OncePerRequestFilter {
             try {
                 // Validate token
                 if (jwtUtil.validateToken(token, email)) {
-                    logger.debug("Token validated successfully for user: {} with role: {}", email, role);
+                    logger.debug("✅ Token validated successfully for user: {} with role: {}", email, role);
 
                     // Create authorities with ROLE_ prefix for Spring Security
                     List<GrantedAuthority> authorities = Collections.singletonList(
@@ -162,50 +165,53 @@ public class JwtFilter extends OncePerRequestFilter {
                     // Set authentication in security context
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                    logger.debug("Authentication set successfully for user: {} with authorities: {}",
+                    logger.debug("✅ Authentication set successfully for user: {} with authorities: {}",
                             email, authorities);
 
-                    // Verify authentication was set
-                    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                    logger.debug("Current authentication: {}", auth);
-                    logger.debug("Current authorities: {}", auth != null ? auth.getAuthorities() : "null");
-
                 } else {
-                    logger.warn("Token validation failed for user: {}", email);
-                    sendUnauthorizedResponse(request, response, "Token validation failed", "Token is expired or invalid. Please login again");
+                    logger.warn("❌ Token validation failed for user: {}", email);
+                    sendUnauthorizedResponse(request, response, "Token validation failed",
+                            "Token is expired or invalid. Please login again");
                     return;
                 }
 
             } catch (Exception e) {
-                logger.error("Error during token validation for user {}: {}", email, e.getMessage());
-                sendUnauthorizedResponse(request, response, "Authentication error", "Please login again");
+                logger.error("❌ Error during token validation for user {}: {}", email, e.getMessage());
+                sendUnauthorizedResponse(request, response, "Authentication error",
+                        "Please login again");
                 return;
             }
         }
 
-        // Continue with the request
+        // ✅ Continue with the request
         filterChain.doFilter(request, response);
     }
 
     /**
      * Check if the given path should be excluded from JWT validation
+     * Uses startsWith to match /api/auth/login, /api/auth/login/*, etc.
      */
     private boolean isExcludedPath(String path) {
-        if (path == null) {
+        if (path == null || path.isEmpty()) {
             return false;
         }
 
+        // Remove query parameters and fragments
+        String cleanPath = path.split("\\?")[0].split("#")[0];
+
         boolean isExcluded = EXCLUDED_PATHS.stream().anyMatch(excludedPath ->
-                path.startsWith(excludedPath) || path.equals(excludedPath)
+                cleanPath.equals(excludedPath) || cleanPath.startsWith(excludedPath + "/")
         );
 
-        logger.debug("Path {} is excluded: {}", path, isExcluded);
+        if (isExcluded) {
+            logger.info("✅ Path is public (excluded from JWT): {}", cleanPath);
+        }
+
         return isExcluded;
     }
 
     /**
      * Send a standardized unauthorized response with proper CORS headers
-     * ✅ FIXED: Now accepts request to get Origin header
      */
     private void sendUnauthorizedResponse(HttpServletRequest request, HttpServletResponse response,
                                           String error, String message) throws IOException {
@@ -213,13 +219,12 @@ public class JwtFilter extends OncePerRequestFilter {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        // ✅ FIX: Use proper origin from request instead of wildcard
+        // Add CORS headers to error response
         String origin = request.getHeader("Origin");
         if (origin != null && isAllowedOrigin(origin)) {
             response.setHeader("Access-Control-Allow-Origin", origin);
             response.setHeader("Access-Control-Allow-Credentials", "true");
         } else {
-            // Fallback to default allowed origin
             response.setHeader("Access-Control-Allow-Origin", "https://kalvitrack.vercel.app");
             response.setHeader("Access-Control-Allow-Credentials", "true");
         }
@@ -233,7 +238,7 @@ public class JwtFilter extends OncePerRequestFilter {
         );
 
         response.getWriter().write(jsonResponse);
-        logger.debug("Sent unauthorized response: {}", jsonResponse);
+        logger.debug("Sent 401 unauthorized response: {}", jsonResponse);
     }
 
     /**
@@ -254,8 +259,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         // ✅ CRITICAL: Never filter OPTIONS requests
-        if ("OPTIONS".equals(method)) {
-            logger.debug("✅ shouldNotFilter = true for OPTIONS request");
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            logger.debug("✅ shouldNotFilter = true for OPTIONS (preflight) request");
             return true;
         }
 
@@ -265,6 +270,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 requestURI.startsWith("/webjars/") ||
                 requestURI.equals("/favicon.ico") ||
                 requestURI.equals("/health")) {
+            logger.debug("✅ shouldNotFilter = true for static/health resource: {}", requestURI);
             return true;
         }
 
