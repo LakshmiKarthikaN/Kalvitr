@@ -55,6 +55,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             // Health and monitoring
             "/api/health",
+            "/health",
             "/actuator",
 
             // Documentation
@@ -83,9 +84,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
         logger.debug("Processing request - Method: {}, URI: {}", method, requestURI);
 
-        // Skip OPTIONS requests (CORS preflight)
+        // ✅ CRITICAL: Skip OPTIONS requests immediately (CORS preflight)
         if ("OPTIONS".equals(method)) {
-            logger.debug("Skipping JWT validation for OPTIONS request");
+            logger.debug("✅ Skipping JWT validation for OPTIONS request");
             filterChain.doFilter(request, response);
             return;
         }
@@ -102,7 +103,7 @@ public class JwtFilter extends OncePerRequestFilter {
         // Check for Authorization header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             logger.debug("No valid Authorization header found for: {}", requestURI);
-            sendUnauthorizedResponse(response, "Missing Authorization", "Authorization header with Bearer token required");
+            sendUnauthorizedResponse(request, response, "Missing Authorization", "Authorization header with Bearer token required");
             return;
         }
 
@@ -116,22 +117,23 @@ public class JwtFilter extends OncePerRequestFilter {
             role = jwtUtil.extractRole(token);
 
             logger.debug("Extracted email: {} and role: {} from token", email, role);
-         // Validate extracted data
+
+            // Validate extracted data
             if (email == null || email.trim().isEmpty()) {
                 logger.warn("Email is null or empty in token");
-                sendUnauthorizedResponse(response, "Invalid token", "Token does not contain valid email");
+                sendUnauthorizedResponse(request, response, "Invalid token", "Token does not contain valid email");
                 return;
             }
 
             if (role == null || role.trim().isEmpty()) {
                 logger.warn("Role is null or empty in token");
-                sendUnauthorizedResponse(response, "Invalid token", "Token does not contain valid role");
+                sendUnauthorizedResponse(request, response, "Invalid token", "Token does not contain valid role");
                 return;
             }
 
         } catch (Exception e) {
             logger.error("Failed to extract data from token: {}", e.getMessage());
-            sendUnauthorizedResponse(response, "Invalid token", "Token format is invalid or expired");
+            sendUnauthorizedResponse(request, response, "Invalid token", "Token format is invalid or expired");
             return;
         }
 
@@ -150,8 +152,6 @@ public class JwtFilter extends OncePerRequestFilter {
                     logger.debug("Raw role from token: '{}'", role);
                     logger.debug("Authorities being set: {}", authorities);
 
-                    logger.debug("Setting authorities: {}", authorities);
-
                     // Create authentication token
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(email, null, authorities);
@@ -164,20 +164,21 @@ public class JwtFilter extends OncePerRequestFilter {
 
                     logger.debug("Authentication set successfully for user: {} with authorities: {}",
                             email, authorities);
-                    // And after setting authentication
+
+                    // Verify authentication was set
                     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                     logger.debug("Current authentication: {}", auth);
                     logger.debug("Current authorities: {}", auth != null ? auth.getAuthorities() : "null");
 
                 } else {
                     logger.warn("Token validation failed for user: {}", email);
-                    sendUnauthorizedResponse(response, "Token validation failed", "Token is expired or invalid. Please login again");
+                    sendUnauthorizedResponse(request, response, "Token validation failed", "Token is expired or invalid. Please login again");
                     return;
                 }
 
             } catch (Exception e) {
                 logger.error("Error during token validation for user {}: {}", email, e.getMessage());
-                sendUnauthorizedResponse(response, "Authentication error", "Please login again");
+                sendUnauthorizedResponse(request, response, "Authentication error", "Please login again");
                 return;
             }
         }
@@ -203,18 +204,28 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Send a standardized unauthorized response
+     * Send a standardized unauthorized response with proper CORS headers
+     * ✅ FIXED: Now accepts request to get Origin header
      */
-    private void sendUnauthorizedResponse(HttpServletResponse response, String error, String message) throws IOException {
+    private void sendUnauthorizedResponse(HttpServletRequest request, HttpServletResponse response,
+                                          String error, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        // Add CORS headers to unauthorized responses
-        response.setHeader("Access-Control-Allow-Origin", "*");
-        response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-        response.setHeader("Access-Control-Allow-Credentials", "true");
+        // ✅ FIX: Use proper origin from request instead of wildcard
+        String origin = request.getHeader("Origin");
+        if (origin != null && isAllowedOrigin(origin)) {
+            response.setHeader("Access-Control-Allow-Origin", origin);
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+        } else {
+            // Fallback to default allowed origin
+            response.setHeader("Access-Control-Allow-Origin", "https://kalvitrack.vercel.app");
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+        }
+
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD");
+        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, Origin, X-Requested-With");
 
         String jsonResponse = String.format(
                 "{\"error\":\"%s\",\"message\":\"%s\",\"success\":false,\"timestamp\":\"%s\",\"status\":401}",
@@ -226,15 +237,19 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Alternative method to check public endpoints (kept for compatibility)
+     * Check if origin is allowed based on configured patterns
      */
-    private boolean isPublicEndpoint(String path) {
-        return isExcludedPath(path);
+    private boolean isAllowedOrigin(String origin) {
+        if (origin == null) return false;
+
+        return origin.equals("https://kalvitrack.vercel.app") ||
+                origin.matches("https://.*\\.vercel\\.app") ||
+                origin.matches("https://.*\\.cloudfront\\.net") ||
+                origin.matches("http://localhost:[0-9]+");
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        // Additional check to skip filter for certain conditions
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
 
@@ -243,11 +258,13 @@ public class JwtFilter extends OncePerRequestFilter {
             logger.debug("✅ shouldNotFilter = true for OPTIONS request");
             return true;
         }
+
         // Skip filtering for static resources and health checks
         if (requestURI.startsWith("/actuator/") ||
                 requestURI.startsWith("/static/") ||
                 requestURI.startsWith("/webjars/") ||
-                requestURI.equals("/favicon.ico")) {
+                requestURI.equals("/favicon.ico") ||
+                requestURI.equals("/health")) {
             return true;
         }
 

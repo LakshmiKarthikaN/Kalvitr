@@ -164,7 +164,9 @@ public class WebSecurityConfig {
                 "Content-Type",
                 "Accept",
                 "Origin",
-                "X-Requested-With"
+                "X-Requested-With",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
         ));
 
         // Also allow pattern matching for dynamic Vercel and CloudFront URLs
