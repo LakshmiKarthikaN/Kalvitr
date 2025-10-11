@@ -18,6 +18,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Configuration
@@ -148,16 +149,19 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-                "https://kalvitrack.vercel.app",
-                "https://*.vercel.app",
-                "https://*.cloudfront.net",
-                "http://localhost:[0-9]*"
-        ));
-        configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
-        ));
-//        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+//        configuration.setAllowedOriginPatterns(List.of(
+//                "https://kalvitrack.vercel.app",
+//                "https://*.vercel.app",
+//                "https://*.cloudfront.net",
+//                "http://localhost:[0-9]*"
+//        ));
+        configuration.setAllowedOriginPatterns(Collections.singletonList("*"));
+        configuration.setAllowedMethods(Arrays.asList("*"));
+
+//        configuration.setAllowedMethods(Arrays.asList(
+//                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+//        ));
+//       List<String> origins = Arrays.asList(allowedOrigins.split(","));
 //        configuration.setAllowedOriginPatterns(origins);
 //        configuration.setAllowedHeaders(List.of(
 //                "Authorization",
@@ -178,7 +182,8 @@ public class WebSecurityConfig {
         // ✅ Expose important headers
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
-                "Content-Type"
+                "Content-Type",
+                "X-Total-Count"
         ));
 
 
