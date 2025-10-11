@@ -16,18 +16,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.beans.factory.annotation.Value;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig {
 
     private final JwtFilter jwtFilter;
-//    @Value("${cors.allowed-origins}")
-//    private String allowedOrigins;
 
     public WebSecurityConfig(JwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
@@ -50,10 +45,10 @@ public class WebSecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ OPTIONS requests MUST be first and permitAll
+                        // ✅ OPTIONS requests MUST be first and permitAll (preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ✅ PUBLIC ENDPOINTS
+                        // ✅ PUBLIC ENDPOINTS (no authentication required)
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
@@ -149,31 +144,44 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-//
+
+        // ✅ Allow all origins including CloudFront
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "https://kalvitrack.vercel.app",
                 "http://localhost:3000",
-                "https://www.kalvi-track.co.in",  // ✅ ADD THIS
+                "http://localhost:5173",
+                "https://www.kalvi-track.co.in",
                 "https://kalvi-track.co.in",
-                "http://localhost:5173"  // Add other local ports if needed
+                "https://*.cloudfront.net",  // ✅ CloudFront pattern
+                "https://d*.cloudfront.net"   // ✅ Alternative CloudFront pattern
         ));
 
-        // ✅ Allow all standard methods
+        // ✅ Allow all standard HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
         ));
 
-        // ✅ Allow necessary headers for requests
+        // ✅ Allow necessary headers
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
                 "Accept",
-                "Origin"
+                "Origin",
+                "X-Requested-With",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
         ));
-        // ✅ Allow credentials
+
+        // ✅ Expose headers that client might need
+        configuration.setExposedHeaders(Arrays.asList(
+                "Authorization",
+                "X-Total-Count"
+        ));
+
+        // ✅ Allow credentials (cookies, auth headers)
         configuration.setAllowCredentials(true);
 
-        // ✅ Cache preflight for 1 hour
+        // ✅ Cache preflight for 1 hour (3600 seconds)
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
