@@ -159,14 +159,16 @@ public class WebSecurityConfig {
         ));
 //        List<String> origins = Arrays.asList(allowedOrigins.split(","));
 //        configuration.setAllowedOriginPatterns(origins);
-        configuration.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "Accept",
-                "Origin",
-                "X-Requested-With",
-                "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
+//        configuration.setAllowedHeaders(List.of(
+//                "Authorization",
+//                "Content-Type",
+//                "Accept",
+//                "Origin",
+//                "X-Requested-With",
+//                "Access-Control-Request-Method",
+//                "Access-Control-Request-Headers"
+//        ));
+        configuration.setAllowedHeaders(List.of("*"
         ));
 
         // Also allow pattern matching for dynamic Vercel and CloudFront URLs
