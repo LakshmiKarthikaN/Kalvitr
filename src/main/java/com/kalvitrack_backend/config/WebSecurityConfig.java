@@ -60,7 +60,13 @@ public class WebSecurityConfig {
                                 "/health",
                                 "/api/health"
                         ).permitAll()
-
+                        .requestMatchers(
+                                "/api/students/upload-csv",
+                                "/api/students/statistics",
+                                "/api/students",
+                                "/api/students/role/**",
+                                "/api/students/incomplete"
+                        ).hasAnyRole("ADMIN", "HR")
                         // Admin endpoints
                         .requestMatchers(HttpMethod.GET, "/api/admin/users").hasRole("ADMIN")
                         .requestMatchers("/api/auth/admin/force-user-reset/**").hasRole("ADMIN")
@@ -93,13 +99,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/interviews/panelist/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN")
 
                         // HR and Admin can manage students
-                        .requestMatchers(
-                                "/api/students/upload-csv",
-                                "/api/students/statistics",
-                                "/api/students",
-                                "/api/students/role/**",
-                                "/api/students/incomplete"
-                        ).hasAnyRole("ADMIN", "HR")
+
 
                         // ROLE-BASED AUTHORIZATION
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
