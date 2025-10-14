@@ -1,6 +1,7 @@
 package com.kalvitrack_backend.config;
 
 import com.kalvitrack_backend.config.jwthandler.JwtFilter;
+import org.apache.catalina.filters.CorsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -41,13 +42,14 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // ✅ CORS must be configured BEFORE CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ OPTIONS requests MUST be first
+                        // ✅ OPTIONS requests MUST be first and permitAll (preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ✅ PUBLIC ENDPOINTS - MOST SPECIFIC FIRST
+                        // ✅ PUBLIC ENDPOINTS (no authentication required)
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
@@ -56,13 +58,8 @@ public class WebSecurityConfig {
                                 "/health",
                                 "/api/health"
                         ).permitAll()
-
-                        // ✅ STUDENT PUBLIC ENDPOINTS - BEFORE WILDCARD
-                        .requestMatchers(
-                                "/api/students/verify-email",
-                                "/api/students/complete-registration"
-                        ).permitAll()
-
+                        .requestMatchers("/api/students/verify-email",
+                                "/api/students/complete-registration").permitAll()
                         // Admin endpoints
                         .requestMatchers(HttpMethod.GET, "/api/admin/users").hasRole("ADMIN")
                         .requestMatchers("/api/auth/admin/force-user-reset/**").hasRole("ADMIN")
@@ -94,29 +91,33 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/interviews/student/**").hasAnyRole("PMIS", "HR", "ADMIN", "FACULTY")
                         .requestMatchers("/api/interviews/panelist/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN")
 
-                        // ✅ PROTECTED STUDENT ENDPOINTS - AFTER PUBLIC ONES
+                        // HR and Admin can manage students
                         .requestMatchers(
                                 "/api/students/upload-csv",
                                 "/api/students/statistics",
+                                "/api/students",
                                 "/api/students/role/**",
                                 "/api/students/incomplete"
                         ).hasAnyRole("ADMIN", "HR")
-
-                        .requestMatchers(HttpMethod.GET, "/api/students").hasAnyRole("HR", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/students/*/status").hasAnyRole("HR", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/students/**").hasRole("ADMIN")
-                        .requestMatchers("/api/students/export").hasAnyRole("HR", "ADMIN")
-                        .requestMatchers("/api/students/bulk-update").hasAnyRole("HR", "ADMIN")
 
                         // ROLE-BASED AUTHORIZATION
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/hr/**").hasAnyRole("HR", "ADMIN")
                         .requestMatchers("/api/faculty/**").hasAnyRole("FACULTY", "ADMIN")
 
-                        // STUDENT PROFILE ENDPOINTS
+                        // STUDENT ENDPOINTS
                         .requestMatchers("/api/students/profile").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
                         .requestMatchers("/api/students/resume").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
                         .requestMatchers("/api/students/my-**").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN")
+
+                        // Admin/HR managed student endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/students/**").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/students/*/status").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/students/**").hasRole("ADMIN")
+                        .requestMatchers("/api/students/upload-csv").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers("/api/students/statistics").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers("/api/students/export").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers("/api/students/bulk-update").hasAnyRole("HR", "ADMIN")
 
                         // PROFILE ENDPOINTS
                         .requestMatchers("/api/profile/student/**").hasAnyRole("ZSGS", "ADMIN")
@@ -134,6 +135,7 @@ public class WebSecurityConfig {
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        // ✅ JWT filter AFTER the security chain is configured
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -143,6 +145,7 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
+// ✅ Specific origins only (no wildcards when allowCredentials = true)
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://kalvitrack.vercel.app",
                 "https://www.kalvi-track.co.in",
@@ -169,11 +172,13 @@ public class WebSecurityConfig {
                 "X-Total-Count"
         ));
 
+// ✅ Keep credentials if you need them
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
+// ✅ Apply to all paths
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-}
+    }
