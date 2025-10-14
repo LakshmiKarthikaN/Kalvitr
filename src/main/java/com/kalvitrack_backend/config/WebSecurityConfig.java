@@ -55,11 +55,12 @@ public class WebSecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/auth/validate-reset-token",
+                                "/api/students/verify-email",
+                                "/api/students/complete-registration",
                                 "/health",
                                 "/api/health"
                         ).permitAll()
-                        .requestMatchers("/api/students/verify-email",
-                                "/api/students/complete-registration").permitAll()
+
                         // Admin endpoints
                         .requestMatchers(HttpMethod.GET, "/api/admin/users").hasRole("ADMIN")
                         .requestMatchers("/api/auth/admin/force-user-reset/**").hasRole("ADMIN")
