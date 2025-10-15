@@ -38,40 +38,51 @@ public class WebSecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // ✅ CORS must be configured BEFORE CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ OPTIONS requests MUST be first and permitAll (preflight)
+                        // ✅ OPTIONS requests MUST be first
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ✅ PUBLIC ENDPOINTS (no authentication required)
+                        // ✅ PUBLIC ENDPOINTS - MOST SPECIFIC FIRST
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/auth/validate-reset-token",
-                                "/api/students/verify-email",
-                                "/api/students/complete-registration",
+                                "/api/students/verify-email",           // ✅ Public
+                                "/api/students/complete-registration",  // ✅ Public
                                 "/health",
                                 "/api/health"
                         ).permitAll()
-                        .requestMatchers(
-                                "/api/students/upload-csv",
-                                "/api/students/statistics",
-                                "/api/students",
-                                "/api/students/role/**",
-                                "/api/students/incomplete"
-                        ).permitAll()
+
+                        // ✅ PROTECTED STUDENT ENDPOINTS - After permitAll
+                        .requestMatchers("/api/students/upload-csv").hasAnyRole("ADMIN", "HR")
+                        .requestMatchers("/api/students/statistics").hasAnyRole("ADMIN", "HR")
+                        .requestMatchers("/api/students/incomplete").hasAnyRole("ADMIN", "HR")
+                        .requestMatchers("/api/students/role/**").hasAnyRole("ADMIN", "HR")
+                        .requestMatchers("/api/students/export").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers("/api/students/bulk-update").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/students").hasAnyRole("ADMIN", "HR")
+                        .requestMatchers(HttpMethod.PUT, "/api/students/*/status").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/students/**").hasRole("ADMIN")
+
+                        // Student profile endpoints
+                        .requestMatchers("/api/students/profile").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
+                        .requestMatchers("/api/students/resume").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
+                        .requestMatchers("/api/students/my-**").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN")
+
+                        // ⚠️ REMOVED: .requestMatchers(HttpMethod.GET, "/api/students/**").hasAnyRole("HR", "ADMIN")
+                        // This was catching everything including complete-registration!
+
                         // Admin endpoints
                         .requestMatchers(HttpMethod.GET, "/api/admin/users").hasRole("ADMIN")
                         .requestMatchers("/api/auth/admin/force-user-reset/**").hasRole("ADMIN")
 
-                        // Password reset endpoints that require authentication
+                        // Password reset endpoints
                         .requestMatchers("/api/auth/force-reset-password").hasAnyRole("HR", "FACULTY","INTERVIEW_PANELIST")
                         .requestMatchers("/api/auth/check-password-reset-required").authenticated()
 
@@ -79,8 +90,6 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users").hasAnyRole("ADMIN", "HR")
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("ADMIN", "HR")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-
-                        // ROLE-SPECIFIC USER ENDPOINTS
                         .requestMatchers(HttpMethod.GET, "/api/hr/users").hasRole("HR")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("ADMIN", "HR")
 
@@ -92,33 +101,14 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/interviews/**").hasAnyRole("HR", "ADMIN", "FACULTY")
                         .requestMatchers(HttpMethod.PUT, "/api/interviews/**").hasAnyRole("HR", "ADMIN", "FACULTY")
                         .requestMatchers(HttpMethod.DELETE, "/api/interviews/**").hasAnyRole("HR", "ADMIN")
-
-                        // Student-specific interview endpoints
                         .requestMatchers("/api/interviews/my-interviews").hasAnyRole("PMIS", "ADMIN")
                         .requestMatchers("/api/interviews/student/**").hasAnyRole("PMIS", "HR", "ADMIN", "FACULTY")
                         .requestMatchers("/api/interviews/panelist/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN")
-
-                        // HR and Admin can manage students
-
 
                         // ROLE-BASED AUTHORIZATION
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/hr/**").hasAnyRole("HR", "ADMIN")
                         .requestMatchers("/api/faculty/**").hasAnyRole("FACULTY", "ADMIN")
-
-                        // STUDENT ENDPOINTS
-                        .requestMatchers("/api/students/profile").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
-                        .requestMatchers("/api/students/resume").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
-                        .requestMatchers("/api/students/my-**").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN")
-
-                        // Admin/HR managed student endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/students/**").hasAnyRole("HR", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/students/*/status").hasAnyRole("HR", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/students/**").hasRole("ADMIN")
-                        .requestMatchers("/api/students/upload-csv").hasAnyRole("HR", "ADMIN")
-                        .requestMatchers("/api/students/statistics").hasAnyRole("HR", "ADMIN")
-                        .requestMatchers("/api/students/export").hasAnyRole("HR", "ADMIN")
-                        .requestMatchers("/api/students/bulk-update").hasAnyRole("HR", "ADMIN")
 
                         // PROFILE ENDPOINTS
                         .requestMatchers("/api/profile/student/**").hasAnyRole("ZSGS", "ADMIN")
@@ -136,7 +126,6 @@ public class WebSecurityConfig {
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // ✅ JWT filter AFTER the security chain is configured
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
