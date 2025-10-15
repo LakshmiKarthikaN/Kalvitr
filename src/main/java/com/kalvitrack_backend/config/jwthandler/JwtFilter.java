@@ -80,7 +80,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
-
+        if (isPublicEndpoint(requestURI, method)) {
+            logger.info("✅ Public endpoint - skipping JWT validation: {}", requestURI);
+            filterChain.doFilter(request, response);
+            return;
+        }
         logger.debug("Processing request - Method: {}, URI: {}", method, requestURI);
 
         // ✅ CRITICAL: Skip OPTIONS requests immediately (CORS preflight)
@@ -275,5 +279,24 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         return false;
+    }
+    /**
+     * Check if the endpoint is public and doesn't require authentication
+     */
+    private boolean isPublicEndpoint(String uri, String method) {
+        // OPTIONS requests (CORS preflight)
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            return true;
+        }
+
+        // Public endpoints
+        return uri.equals("/api/auth/login") ||
+                uri.equals("/api/auth/forgot-password") ||
+                uri.equals("/api/auth/reset-password") ||
+                uri.equals("/api/auth/validate-reset-token") ||
+                uri.equals("/api/students/verify-email") ||
+                uri.equals("/api/students/complete-registration") ||
+                uri.equals("/health") ||
+                uri.equals("/api/health");
     }
 }
