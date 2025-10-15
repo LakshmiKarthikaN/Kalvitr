@@ -66,7 +66,7 @@ public class WebSecurityConfig {
                                 "/api/students",
                                 "/api/students/role/**",
                                 "/api/students/incomplete"
-                        ).hasAnyRole("ADMIN", "HR")
+                        ).permitAll()
                         // Admin endpoints
                         .requestMatchers(HttpMethod.GET, "/api/admin/users").hasRole("ADMIN")
                         .requestMatchers("/api/auth/admin/force-user-reset/**").hasRole("ADMIN")
