@@ -60,7 +60,7 @@ public class WebSecurityConfig {
                         ).permitAll()
 
                         // ✅ PROTECTED STUDENT ENDPOINTS - After permitAll
-                        .requestMatchers("/api/students/upload-csv").hasAnyRole("ADMIN", "HR")
+                        .requestMatchers("/api/students/upload-csv").hasAnyRole("ADMIN", "HR","ZSGS","PMIS")
                         .requestMatchers("/api/students/statistics").hasAnyRole("ADMIN", "HR")
                         .requestMatchers("/api/students/incomplete").hasAnyRole("ADMIN", "HR")
                         .requestMatchers("/api/students/role/**").hasAnyRole("ADMIN", "HR")
@@ -71,9 +71,9 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/students/**").hasRole("ADMIN")
 
                         // Student profile endpoints
-                        .requestMatchers("/api/students/profile").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
-                        .requestMatchers("/api/students/resume").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN", "HR")
-                        .requestMatchers("/api/students/my-**").hasAnyRole("ZSGS", "PMIS", "STUDENT", "ADMIN")
+                        .requestMatchers("/api/students/profile").hasAnyRole("ZSGS", "PMIS", "ADMIN", "HR")
+                        .requestMatchers("/api/students/resume").hasAnyRole("ZSGS", "PMIS", "ADMIN", "HR")
+                        .requestMatchers("/api/students/my-**").hasAnyRole("ZSGS", "PMIS", "ADMIN")
 
                         // ⚠️ REMOVED: .requestMatchers(HttpMethod.GET, "/api/students/**").hasAnyRole("HR", "ADMIN")
                         // This was catching everything including complete-registration!
@@ -111,7 +111,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/faculty/**").hasAnyRole("FACULTY", "ADMIN")
 
                         // PROFILE ENDPOINTS
-                        .requestMatchers("/api/profile/student/**").hasAnyRole("ZSGS", "ADMIN")
+                        .requestMatchers("/api/profile/student/**").hasAnyRole("ZSGS", "PMIS","ADMIN")
                         .requestMatchers("/api/profile/**").hasAnyRole("HR", "FACULTY", "ADMIN")
 
                         // FILE MANAGEMENT
@@ -140,7 +140,13 @@ public class WebSecurityConfig {
                 "https://kalvitrack.vercel.app",
                 "https://www.kalvi-track.co.in",
                 "https://kalvi-track.co.in",
-                "https://d1clpzx8i9nb2e.cloudfront.net"
+                "http://localhost:5173",
+                "https://d1clpzx8i9nb2e.cloudfront.net",
+                "http://localhost:3000",
+                "http://localhost:4200",
+                "http://localhost:8080",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:3000"
         ));
 
         configuration.setAllowedMethods(Arrays.asList(
