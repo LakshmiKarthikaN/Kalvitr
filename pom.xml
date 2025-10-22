@@ -27,6 +27,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+
         <!-- Apache Commons CSV for CSV parsing -->
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -36,7 +38,11 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-mail</artifactId>
     </dependency>
-
+        <dependency>
+            <groupId>me.paulschwarz</groupId>
+            <artifactId>spring-dotenv</artifactId>
+            <version>3.0.0</version>
+        </dependency>
         <!-- Jakarta Mail (Angus implementation, needed for runtime) -->
         <dependency>
             <groupId>org.eclipse.angus</groupId>
