@@ -15,7 +15,7 @@ import java.util.Date;
 public class JwtUtil {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
-    // Read from application.properties - SECURE 256-bit secret
+    // Read from application.prod.properties - SECURE 256-bit secret
     @Value("${jwt.secret:mySecretKeyForKalviTrackAppThatIsAtLeast32CharactersLongForHS256Algorithm}")
     private String SECRET;
 
