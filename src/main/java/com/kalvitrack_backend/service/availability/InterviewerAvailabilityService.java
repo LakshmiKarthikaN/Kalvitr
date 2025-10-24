@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -28,12 +27,13 @@ public class InterviewerAvailabilityService {
     private UserRepository userRepository;
 
     /**
-     * Submit interviewer availability - stores in interviewer_availability table
+     * Submit interviewer availability - stores ORIGINAL blocks only
+     * Splitting happens on-demand when HR selects duration
      */
     public List<InterviewerAvailability> submitAvailability(Long userId, InterviewerAvailabilityDTO availabilityDTO) {
         System.out.println("=== PROCESSING AVAILABILITY SUBMISSION ===");
 
-        // Step 1: Validate user exists and has correct role
+        // Validate user
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -48,7 +48,7 @@ public class InterviewerAvailabilityService {
             throw new IllegalArgumentException("User account is not active");
         }
 
-        // Step 2: Get or create interviewer record
+        // Get or create interviewer record
         Interviewer interviewer = interviewerRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     System.out.println("Creating new interviewer record for user: " + userId);
@@ -67,7 +67,7 @@ public class InterviewerAvailabilityService {
 
         List<InterviewerAvailability> savedAvailabilities = new ArrayList<>();
 
-        // Step 3: Process each selected date and time slots
+        // Process each date and its time blocks
         for (Map.Entry<String, List<InterviewerAvailabilityDTO.TimeSlot>> entry :
                 availabilityDTO.getTimeSlots().entrySet()) {
 
@@ -75,24 +75,24 @@ public class InterviewerAvailabilityService {
             LocalDate date = LocalDate.parse(dateStr);
             List<InterviewerAvailabilityDTO.TimeSlot> timeSlots = entry.getValue();
 
-            System.out.println("Processing date: " + date + " with " + timeSlots.size() + " time slots");
+            System.out.println("Processing date: " + date + " with " + timeSlots.size() + " time blocks");
 
-            // Validate date is not in the past
+            // Validate date
             if (date.isBefore(LocalDate.now())) {
                 throw new IllegalArgumentException("Cannot set availability for past dates: " + date);
             }
 
-            // Step 4: Clear existing availability for this date (replace strategy)
+            // Clear existing availability for this date
             System.out.println("Clearing existing availability for date: " + date);
             availabilityRepository.deleteByInterviewerIdAndAvailableDate(
                     interviewer.getInterviewerId(), date);
 
-            // Step 5: Create new availability slots
+            // Create availability records - ONE per time block (NOT split)
             for (InterviewerAvailabilityDTO.TimeSlot timeSlot : timeSlots) {
                 LocalTime startTime = LocalTime.parse(timeSlot.getStartTime());
                 LocalTime endTime = LocalTime.parse(timeSlot.getEndTime());
 
-                System.out.println("Creating slot: " + startTime + " - " + endTime);
+                System.out.println("Creating block: " + startTime + " - " + endTime);
 
                 // Validate time slot
                 if (!startTime.isBefore(endTime)) {
@@ -100,80 +100,58 @@ public class InterviewerAvailabilityService {
                             String.format("Invalid time slot for %s: start time (%s) must be before end time (%s)",
                                     date, startTime, endTime));
                 }
+
+                // Store DEFAULT duration (can be changed by HR later)
                 int slotDuration = availabilityDTO.getSlotDurationMinutes() != null
                         ? availabilityDTO.getSlotDurationMinutes()
                         : 60;
-                List<InterviewerAvailability> slotsForBlock = splitIntoSlots(
-                        interviewer.getInterviewerId(),
-                        date,
-                        startTime,
-                        endTime,
-                        slotDuration,
-                        timeSlot.getNotes()
-                );
-                for (InterviewerAvailability slot : slotsForBlock) {
-                    InterviewerAvailability saved = availabilityRepository.save(slot);
-                    savedAvailabilities.add(saved);
-                    System.out.println("✅ Saved slot: " + saved.getStartTime() + "-" + saved.getEndTime());
-                }
 
-                // Create and save availability record
+                // Create ONE availability record for the entire block
                 InterviewerAvailability availability = new InterviewerAvailability();
                 availability.setInterviewerId(interviewer.getInterviewerId());
                 availability.setAvailableDate(date);
                 availability.setStartTime(startTime);
                 availability.setEndTime(endTime);
                 availability.setIsBooked(false);
-                availability.setSlotDurationMinutes(60); // Default 1 hour slots
+                availability.setSlotDurationMinutes(slotDuration); // Default, HR can override
                 availability.setMaxConcurrentInterviews(1);
                 availability.setIsActive(true);
-                availability.setNotes(timeSlot.getNotes()); // Store any notes
+                availability.setNotes(timeSlot.getNotes());
 
                 InterviewerAvailability saved = availabilityRepository.save(availability);
                 savedAvailabilities.add(saved);
 
-                System.out.println("✅ Saved availability slot ID: " + saved.getAvailabilityId());
+                System.out.println("✅ Saved availability block ID: " + saved.getAvailabilityId());
             }
         }
 
-        System.out.println("=== TOTAL SLOTS SAVED: " + savedAvailabilities.size() + " ===");
+        System.out.println("=== TOTAL BLOCKS SAVED: " + savedAvailabilities.size() + " ===");
         return savedAvailabilities;
     }
 
     /**
-     * Get interviewer's current availability
-     */
-    /**
-     * Get interviewer's current availability
+     * Get interviewer's current availability (returns ORIGINAL blocks)
      */
     public List<InterviewerAvailability> getInterviewerAvailability(Long userId) {
         System.out.println("=== GET INTERVIEWER AVAILABILITY ===");
         System.out.println("Fetching availability for user: " + userId);
 
         try {
-            // Step 1: Check if user exists
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
             System.out.println("User found: " + user.getFullName() + " (Role: " + user.getRole() + ")");
 
-            // Step 2: Check if interviewer record exists
             Optional<Interviewer> interviewerOpt = interviewerRepository.findByUserId(userId);
 
             if (interviewerOpt.isEmpty()) {
-                System.out.println("No interviewer record found for user: " + userId);
-                System.out.println("Creating new interviewer record...");
-
-                // Create interviewer record if it doesn't exist
+                System.out.println("No interviewer record found, creating new one...");
                 Interviewer newInterviewer = new Interviewer();
                 newInterviewer.setUserId(userId);
                 newInterviewer.setMaxInterviewsPerDay(5);
                 newInterviewer.setIsActive(true);
                 Interviewer savedInterviewer = interviewerRepository.save(newInterviewer);
-
                 System.out.println("Created new interviewer with ID: " + savedInterviewer.getInterviewerId());
-
-                // Return empty list for new interviewer
                 return new ArrayList<>();
             }
 
@@ -184,22 +162,11 @@ public class InterviewerAvailabilityService {
                 throw new IllegalArgumentException("Interviewer account is inactive");
             }
 
-            // Step 3: Fetch availabilities
-            System.out.println("Fetching availabilities for interviewer ID: " + interviewer.getInterviewerId());
-
             List<InterviewerAvailability> availabilities = availabilityRepository
                     .findByInterviewerIdAndIsActiveOrderByAvailableDateAscStartTimeAsc(
                             interviewer.getInterviewerId(), true);
 
-            System.out.println("Found " + availabilities.size() + " availability slots");
-
-            // Log each availability for debugging
-            for (InterviewerAvailability availability : availabilities) {
-                System.out.println("- Slot ID " + availability.getAvailabilityId() +
-                        ": " + availability.getAvailableDate() +
-                        " " + availability.getStartTime() +
-                        "-" + availability.getEndTime());
-            }
+            System.out.println("Found " + availabilities.size() + " availability blocks");
 
             return availabilities;
 
@@ -209,23 +176,17 @@ public class InterviewerAvailabilityService {
             throw e;
         }
     }
-    /**
-     * Get assigned students for interviewer
-     */
+
     public List<Map<String, Object>> getAssignedStudents(Long userId) {
         // TODO: Implement this method to fetch assigned students
-        // For now, returning empty list
         return new ArrayList<>();
     }
 
-    /**
-     * Update availability slot
-     */
-    public InterviewerAvailability updateAvailability(Long availabilityId, Long userId, InterviewerAvailabilityDTO.TimeSlot timeSlot) {
+    public InterviewerAvailability updateAvailability(Long availabilityId, Long userId,
+                                                      InterviewerAvailabilityDTO.TimeSlot timeSlot) {
         InterviewerAvailability availability = availabilityRepository.findById(availabilityId)
                 .orElseThrow(() -> new IllegalArgumentException("Availability slot not found"));
 
-        // Verify ownership
         Interviewer interviewer = interviewerRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Interviewer not found"));
 
@@ -237,7 +198,6 @@ public class InterviewerAvailabilityService {
             throw new IllegalArgumentException("Cannot update a booked availability slot");
         }
 
-        // Update time slot
         LocalTime startTime = LocalTime.parse(timeSlot.getStartTime());
         LocalTime endTime = LocalTime.parse(timeSlot.getEndTime());
 
@@ -252,14 +212,10 @@ public class InterviewerAvailabilityService {
         return availabilityRepository.save(availability);
     }
 
-    /**
-     * Delete availability slot
-     */
     public void deleteAvailability(Long availabilityId, Long userId) {
         InterviewerAvailability availability = availabilityRepository.findById(availabilityId)
                 .orElseThrow(() -> new IllegalArgumentException("Availability slot not found"));
 
-        // Verify ownership
         Interviewer interviewer = interviewerRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Interviewer not found"));
 
@@ -272,85 +228,5 @@ public class InterviewerAvailabilityService {
         }
 
         availabilityRepository.delete(availability);
-    }
-
-    /**
-     * Get available slots for HR scheduling
-     */
-    /**
-     * Get available slots for HR scheduling with duration splitting
-     */
-    public List<Map<String, Object>> getAvailableSlots(LocalDate startDate, LocalDate endDate, int slotDuration) {
-        List<InterviewerAvailability> availableSlots = availabilityRepository
-                .findAvailableSlots(startDate, endDate);
-
-        return availableSlots.stream()
-                .flatMap(slot -> splitAvailabilityIntoSlots(slot, slotDuration).stream())
-                .collect(Collectors.toList());
-    }
-    private List<InterviewerAvailability> splitIntoSlots(
-            Long interviewerId,
-            LocalDate date,
-            LocalTime blockStart,
-            LocalTime blockEnd,
-            int slotDurationMinutes,
-            String notes) {
-
-        List<InterviewerAvailability> slots = new ArrayList<>();
-        LocalTime currentStart = blockStart;
-
-        while (currentStart.plusMinutes(slotDurationMinutes).isBefore(blockEnd) ||
-                currentStart.plusMinutes(slotDurationMinutes).equals(blockEnd)) {
-
-            LocalTime currentEnd = currentStart.plusMinutes(slotDurationMinutes);
-
-            InterviewerAvailability slot = new InterviewerAvailability();
-            slot.setInterviewerId(interviewerId);
-            slot.setAvailableDate(date);
-            slot.setStartTime(currentStart);
-            slot.setEndTime(currentEnd);
-            slot.setIsBooked(false);
-            slot.setSlotDurationMinutes(slotDurationMinutes);
-            slot.setMaxConcurrentInterviews(1);
-            slot.setIsActive(true);
-            slot.setNotes(notes);
-
-            slots.add(slot);
-            currentStart = currentEnd;
-        }
-
-        return slots;
-    }
-
-    /**
-     * Split a single availability block into multiple smaller slots
-     */
-    private List<Map<String, Object>> splitAvailabilityIntoSlots(
-            InterviewerAvailability availability, int durationMinutes) {
-
-        List<Map<String, Object>> slots = new ArrayList<>();
-
-        LocalTime currentStart = availability.getStartTime();
-        LocalTime blockEnd = availability.getEndTime();
-
-        while (currentStart.plusMinutes(durationMinutes).isBefore(blockEnd) ||
-                currentStart.plusMinutes(durationMinutes).equals(blockEnd)) {
-
-            LocalTime slotEnd = currentStart.plusMinutes(durationMinutes);
-
-            Map<String, Object> slotInfo = new HashMap<>();
-            slotInfo.put("availabilityId", availability.getAvailabilityId());
-            slotInfo.put("interviewerId", availability.getInterviewerId());
-            slotInfo.put("date", availability.getAvailableDate().toString());
-            slotInfo.put("startTime", currentStart.toString());
-            slotInfo.put("endTime", slotEnd.toString());
-            slotInfo.put("duration", durationMinutes);
-            slotInfo.put("notes", availability.getNotes());
-
-            slots.add(slotInfo);
-            currentStart = slotEnd;
-        }
-
-        return slots;
     }
 }

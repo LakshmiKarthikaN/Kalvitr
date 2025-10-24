@@ -10,7 +10,6 @@ import com.kalvitrack_backend.repository.InterviewerRepository;
 import com.kalvitrack_backend.repository.UserRepository;
 import com.kalvitrack_backend.service.availability.InterviewerAvailabilityService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,13 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/panelists")
-@CrossOrigin(origins ={ "https://kalvitrack.vercel.app", "http://localhost:5173",
-        "http://localhost:5174"})
-
+@CrossOrigin(origins = {"https://kalvitrack.vercel.app", "http://localhost:5173", "http://localhost:5174"})
 public class InterviewerAvailabilityController {
 
     @Autowired
@@ -37,6 +33,7 @@ public class InterviewerAvailabilityController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
     @Autowired
     private InterviewerAvailabilityRepository availabilityRepository;
 
@@ -48,7 +45,6 @@ public class InterviewerAvailabilityController {
 
     /**
      * Submit interviewer availability
-     * Only INTERVIEW_PANELIST and FACULTY roles can set their availability
      */
     @PostMapping("/availability")
     @PreAuthorize("hasRole('INTERVIEW_PANELIST') or hasRole('FACULTY')")
@@ -56,12 +52,10 @@ public class InterviewerAvailabilityController {
             @RequestBody InterviewerAvailabilityDTO availabilityDTO,
             HttpServletRequest request) {
         try {
-            // Extract user ID from JWT token
             String token = jwtUtil.getTokenFromRequest(request);
             Long userId = jwtUtil.getUserIdFromToken(token);
             String userRole = jwtUtil.getRoleFromToken(token);
 
-            // Validate user role
             if (!userRole.equals("INTERVIEW_PANELIST") && !userRole.equals("FACULTY")) {
                 return ResponseEntity.status(403).body(Map.of(
                         "success", false,
@@ -69,7 +63,6 @@ public class InterviewerAvailabilityController {
                 ));
             }
 
-            // Submit availability
             List<InterviewerAvailability> savedAvailabilities =
                     availabilityService.submitAvailability(userId, availabilityDTO);
 
@@ -94,20 +87,14 @@ public class InterviewerAvailabilityController {
     }
 
     /**
-     * Get interviewer's own availability
+     * Get interviewer's own availability (shows ORIGINAL blocks, not split)
      */
     @GetMapping("/availability")
+    @PreAuthorize("hasRole('INTERVIEW_PANELIST') or hasRole('FACULTY')")
     public ResponseEntity<?> getMyAvailability(HttpServletRequest request) {
         try {
             String token = jwtUtil.getTokenFromRequest(request);
-            System.out.println("🔍 Token exists: " + (token != null));
-
-            if (token != null) {
-                jwtUtil.debugToken(token); // This will print all token claims
-            }
-
             Long userId = jwtUtil.getUserIdFromToken(token);
-            System.out.println("🔍 Extracted userId: " + userId);
 
             if (userId == null) {
                 return ResponseEntity.status(401).body(Map.of(
@@ -116,12 +103,34 @@ public class InterviewerAvailabilityController {
                 ));
             }
 
-            List<InterviewerAvailability> availabilities =
-                    availabilityService.getInterviewerAvailability(userId);
+            // Get interviewer
+            Interviewer interviewer = interviewerRepository.findByUserId(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Interviewer not found"));
+
+            // Get only ORIGINAL blocks (where start_time and slot_duration_minutes indicate original)
+            List<InterviewerAvailability> availabilities = availabilityRepository
+                    .findByInterviewerIdAndIsActiveOrderByAvailableDateAscStartTimeAsc(
+                            interviewer.getInterviewerId(), true);
+
+            // Group by date and time range to show original blocks
+            Map<String, InterviewerAvailability> uniqueBlocks = new HashMap<>();
+
+            for (InterviewerAvailability avail : availabilities) {
+                String key = avail.getAvailableDate() + "_" + avail.getStartTime();
+                if (!uniqueBlocks.containsKey(key)) {
+                    uniqueBlocks.put(key, avail);
+                } else {
+                    // Keep the one with latest end time (original block)
+                    InterviewerAvailability existing = uniqueBlocks.get(key);
+                    if (avail.getEndTime().isAfter(existing.getEndTime())) {
+                        uniqueBlocks.put(key, avail);
+                    }
+                }
+            }
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "data", availabilities
+                    "data", new ArrayList<>(uniqueBlocks.values())
             ));
         } catch (Exception e) {
             e.printStackTrace();
@@ -133,9 +142,130 @@ public class InterviewerAvailabilityController {
     }
 
     /**
-     * Get assigned students for interviewer
-     * Only INTERVIEW_PANELIST and FACULTY can see their assigned students
+     * Get available slots for HR scheduling - SPLITS into selected duration
      */
+    @GetMapping("/available-slots")
+    @PreAuthorize("hasRole('HR') or hasRole('ADMIN')")
+    public ResponseEntity<?> getAvailableSlots(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(defaultValue = "60") int slotDuration) {
+
+        System.out.println("=== GET AVAILABLE SLOTS FOR HR ===");
+        System.out.println("Slot Duration: " + slotDuration + " minutes");
+
+        if (startDate == null) startDate = LocalDate.now();
+        if (endDate == null) endDate = startDate.plusMonths(1);
+
+        // Get all available slots (original blocks)
+        List<InterviewerAvailability> availableSlots = availabilityRepository
+                .findAvailableSlots(startDate, endDate);
+
+        System.out.println("Found " + availableSlots.size() + " availability blocks");
+
+        // Group by interviewer and date, then split
+        Map<String, List<InterviewerAvailability>> groupedSlots = availableSlots.stream()
+                .collect(Collectors.groupingBy(slot ->
+                        slot.getInterviewerId() + "_" + slot.getAvailableDate().toString()
+                ));
+
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        for (Map.Entry<String, List<InterviewerAvailability>> entry : groupedSlots.entrySet()) {
+            List<InterviewerAvailability> daySlots = entry.getValue();
+            if (daySlots.isEmpty()) continue;
+
+            InterviewerAvailability firstSlot = daySlots.get(0);
+
+            // Get interviewer details
+            Interviewer interviewer = interviewerRepository.findById(firstSlot.getInterviewerId())
+                    .orElse(null);
+            if (interviewer == null) continue;
+
+            User user = userRepository.findById(interviewer.getUserId())
+                    .orElse(null);
+            if (user == null) continue;
+
+            // Split the blocks into slots of selected duration
+            List<Map<String, String>> splitSlots = new ArrayList<>();
+
+            for (InterviewerAvailability block : daySlots) {
+                List<Map<String, String>> blockSlots = splitTimeBlock(
+                        block.getStartTime(),
+                        block.getEndTime(),
+                        slotDuration,
+                        block.getAvailabilityId()
+                );
+                splitSlots.addAll(blockSlots);
+            }
+
+            if (splitSlots.isEmpty()) continue;
+
+            Map<String, Object> slotInfo = new HashMap<>();
+            slotInfo.put("interviewerId", firstSlot.getInterviewerId());
+            slotInfo.put("userId", interviewer.getUserId()); // ✅ This is what frontend expects
+            slotInfo.put("interviewerName", user.getFullName());
+            slotInfo.put("interviewerEmail", user.getEmail());
+            slotInfo.put("interviewerRole", user.getRole().toString());
+            slotInfo.put("date", firstSlot.getAvailableDate().toString());
+            slotInfo.put("totalSlots", splitSlots.size());
+            slotInfo.put("slots", splitSlots);
+            slotInfo.put("notes", firstSlot.getNotes());
+
+            // Time range summary
+            LocalTime earliestStart = daySlots.stream()
+                    .map(InterviewerAvailability::getStartTime)
+                    .min(LocalTime::compareTo)
+                    .orElse(null);
+            LocalTime latestEnd = daySlots.stream()
+                    .map(InterviewerAvailability::getEndTime)
+                    .max(LocalTime::compareTo)
+                    .orElse(null);
+
+            slotInfo.put("timeRange", earliestStart + " - " + latestEnd);
+
+            results.add(slotInfo);
+        }
+
+        System.out.println("=== RETURNING " + results.size() + " GROUPED SLOTS ===");
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", results,
+                "totalInterviewers", results.size()
+        ));
+    }
+
+    /**
+     * Helper: Split time block into slots
+     */
+    private List<Map<String, String>> splitTimeBlock(
+            LocalTime startTime,
+            LocalTime endTime,
+            int durationMinutes,
+            Long availabilityId) {
+
+        List<Map<String, String>> slots = new ArrayList<>();
+        LocalTime currentStart = startTime;
+
+        while (currentStart.plusMinutes(durationMinutes).isBefore(endTime) ||
+                currentStart.plusMinutes(durationMinutes).equals(endTime)) {
+
+            LocalTime slotEnd = currentStart.plusMinutes(durationMinutes);
+
+            Map<String, String> slot = new HashMap<>();
+            slot.put("availabilityId", availabilityId.toString());
+            slot.put("startTime", currentStart.toString());
+            slot.put("endTime", slotEnd.toString());
+            slot.put("duration", String.valueOf(durationMinutes));
+
+            slots.add(slot);
+            currentStart = slotEnd;
+        }
+
+        return slots;
+    }
+
     @GetMapping("/assigned-students")
     @PreAuthorize("hasRole('INTERVIEW_PANELIST') or hasRole('FACULTY')")
     public ResponseEntity<?> getAssignedStudents(HttpServletRequest request) {
@@ -159,9 +289,6 @@ public class InterviewerAvailabilityController {
         }
     }
 
-    /**
-     * Update availability slot
-     */
     @PutMapping("/availability/{availabilityId}")
     @PreAuthorize("hasRole('INTERVIEW_PANELIST') or hasRole('FACULTY')")
     public ResponseEntity<?> updateAvailability(
@@ -194,9 +321,6 @@ public class InterviewerAvailabilityController {
         }
     }
 
-    /**
-     * Delete availability slot
-     */
     @DeleteMapping("/availability/{availabilityId}")
     @PreAuthorize("hasRole('INTERVIEW_PANELIST') or hasRole('FACULTY')")
     public ResponseEntity<?> deleteAvailability(
@@ -224,139 +348,5 @@ public class InterviewerAvailabilityController {
                     "message", "Failed to delete availability: " + e.getMessage()
             ));
         }
-    }
-
-    /**
-     * Get available interview slots for HR scheduling
-     * Only HR and ADMIN can access this
-     */
-    @GetMapping("/available-slots")
-    @PreAuthorize("hasRole('HR') or hasRole('ADMIN')")
-    public ResponseEntity<?> getAvailableSlots(
-            @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate) {
-
-        System.out.println("=== GET AVAILABLE SLOTS ===");
-
-        if (startDate == null) startDate = LocalDate.now();
-        if (endDate == null) endDate = startDate.plusMonths(1);
-
-        System.out.println("Start Date: " + startDate);
-        System.out.println("End Date: " + endDate);
-
-        List<InterviewerAvailability> availableSlots = availabilityRepository
-                .findAvailableSlots(startDate, endDate);
-
-        System.out.println("Found " + availableSlots.size() + " slots from repository");
-
-        // Group slots by interviewer and date
-        Map<String, List<InterviewerAvailability>> groupedSlots = availableSlots.stream()
-                .collect(Collectors.groupingBy(slot ->
-                        slot.getInterviewerId() + "_" + slot.getAvailableDate().toString()
-                ));
-
-        List<Map<String, Object>> results = new ArrayList<>();
-
-        for (Map.Entry<String, List<InterviewerAvailability>> entry : groupedSlots.entrySet()) {
-            List<InterviewerAvailability> daySlots = entry.getValue();
-            if (daySlots.isEmpty()) continue;
-
-            InterviewerAvailability firstSlot = daySlots.get(0);
-
-            Interviewer interviewer = interviewerRepository.findById(firstSlot.getInterviewerId())
-                    .orElse(null);
-            if (interviewer == null) continue;
-
-            User user = userRepository.findById(interviewer.getUserId())
-                    .orElse(null);
-            if (user == null) continue;
-
-            Map<String, Object> slotInfo = new HashMap<>();
-            slotInfo.put("interviewerId", firstSlot.getInterviewerId());
-            slotInfo.put("userId", interviewer.getUserId());
-            slotInfo.put("interviewerName", user.getFullName());
-            slotInfo.put("interviewerEmail", user.getEmail());
-            slotInfo.put("interviewerRole", user.getRole().toString());
-            slotInfo.put("date", firstSlot.getAvailableDate().toString());
-            slotInfo.put("totalSlots", daySlots.size());
-
-            // Include individual slots for detailed view
-            List<Map<String, String>> slotDetails = daySlots.stream()
-                    .map(slot -> {
-                        Map<String, String> detail = new HashMap<>();
-                        detail.put("availabilityId", slot.getAvailabilityId().toString());
-                        detail.put("startTime", slot.getStartTime().toString());
-                        detail.put("endTime", slot.getEndTime().toString());
-                        detail.put("duration", String.valueOf(slot.getSlotDurationMinutes()));
-                        return detail;
-                    })
-                    .collect(Collectors.toList());
-
-            slotInfo.put("slots", slotDetails);
-
-            // Time range summary
-            LocalTime earliestStart = daySlots.stream()
-                    .map(InterviewerAvailability::getStartTime)
-                    .min(LocalTime::compareTo)
-                    .orElse(null);
-            LocalTime latestEnd = daySlots.stream()
-                    .map(InterviewerAvailability::getEndTime)
-                    .max(LocalTime::compareTo)
-                    .orElse(null);
-
-            slotInfo.put("timeRange", earliestStart + " - " + latestEnd);
-            slotInfo.put("notes", firstSlot.getNotes());
-
-            results.add(slotInfo);
-        }
-
-        System.out.println("=== RETURNING " + results.size() + " GROUPED SLOTS ===");
-
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", results,
-                "totalSlots", availableSlots.size()
-        ));
-    }
-
-    /**
-     * Split an availability block into smaller time slots
-     */
-    private List<Map<String, Object>> splitIntoSlots(
-            InterviewerAvailability availability,
-            Interviewer interviewer,
-            User user,
-            int durationMinutes) {
-
-        List<Map<String, Object>> slots = new ArrayList<>();
-
-        LocalTime currentStart = availability.getStartTime();
-        LocalTime blockEnd = availability.getEndTime();
-
-        while (currentStart.plusMinutes(durationMinutes).isBefore(blockEnd) ||
-                currentStart.plusMinutes(durationMinutes).equals(blockEnd)) {
-
-            LocalTime slotEnd = currentStart.plusMinutes(durationMinutes);
-
-            Map<String, Object> slotInfo = new HashMap<>();
-            slotInfo.put("availabilityId", availability.getAvailabilityId());
-            slotInfo.put("interviewerId", availability.getInterviewerId());
-            slotInfo.put("userId", interviewer.getUserId());
-            slotInfo.put("interviewerName", user.getFullName());
-            slotInfo.put("interviewerEmail", user.getEmail());
-            slotInfo.put("interviewerRole", user.getRole().toString());
-            slotInfo.put("date", availability.getAvailableDate().toString());
-            slotInfo.put("startTime", currentStart.toString());
-            slotInfo.put("endTime", slotEnd.toString());
-            slotInfo.put("duration", durationMinutes);
-            slotInfo.put("notes", availability.getNotes());
-            slotInfo.put("originalBlockStart", availability.getStartTime().toString());
-            slotInfo.put("originalBlockEnd", availability.getEndTime().toString());
-
-            slots.add(slotInfo);
-            currentStart = slotEnd;
-        }
-
-        return slots;
     }
 }
