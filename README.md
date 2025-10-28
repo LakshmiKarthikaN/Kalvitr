@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/LakshmiKarthikaN/Kalvitr/main/src/assets/LogoImg.png" alt="KalviTrack Logo" width="150">
+  <img src="https://github.com/LakshmiKarthikaN/kalvitrfrontend/blob/main/src/assets/LogoImg.png?raw=true" alt="KalviTrack Logo" width="150">
 </p>
 
 <h1 align="center"><b>KalviTrack – Student Progress Tracking System</b></h1>
@@ -19,14 +19,20 @@
   <img src="https://img.shields.io/badge/Language-Java-orange?style=for-the-badge"/>
 </p>
 <p align="center">
-  <a href="https://github.com/LakshmiKarthikaN/kalvitr-frontend" target="_blank">
-    <img src="https://img.shields.io/badge/Frontend%20Repo-Visit%20Now-blue?style=for-the-badge" alt="Frontend Repo"/>
+  <a href="https://github.com/YourGitHubUsername/kalvitr-frontend" target="_blank">
+    <b>Frontend Repository</b>
   </a>
-  &nbsp;
-  <a href="https://kalvitrack.vercel.app/" target="_blank">
-    <img src="https://img.shields.io/badge/Live%20Demo-Open-green?style=for-the-badge" alt="Live Demo"/>
+  &nbsp;&nbsp;
+  <a href="https://github.com/YourGitHubUsername/kalvitr/issues" target="_blank">
+     <b>Report Issue</b>
+  </a>
+    &nbsp;&nbsp;
+
+   <a href="https://kalvitrack.vercel.app/" target="_blank">
+    <b>Live Demo</b>
   </a>
 </p>
+
 
 
 
