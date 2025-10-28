@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Frontend-Angular-red?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Frontend-React-red?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/Backend-Spring%20Boot-green?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/Database-MySQL-blue?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/Language-Java-orange?style=for-the-badge"/>
