@@ -6,6 +6,7 @@ import com.kalvitrack_backend.dto.emailverifyfeature.EmailVerificationResponseDt
 import com.kalvitrack_backend.dto.registration.StudentRegistrationDto;
 import com.kalvitrack_backend.dto.studentspiresponse.ApiResponseDto;
 import com.kalvitrack_backend.entity.Student;
+import com.kalvitrack_backend.repository.StudentRepository;
 import com.kalvitrack_backend.service.studentregistration.AuthService;
 import com.kalvitrack_backend.service.studentregistration.StudentService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,7 +39,7 @@ public class StudentController {
 
     private final StudentService studentService;
     private final AuthService authService;
-
+    private final StudentRepository studentRepository;
     /**
      * Upload students from CSV - Only HR and ADMIN can access
      */
@@ -108,6 +110,99 @@ public class StudentController {
             return ResponseEntity.internalServerError()
                     .body(CsvUploadResponseDto.failure("Server error occurred",
                             List.of("Please try again later: " + e.getMessage())));
+        }
+    }
+    // Add this to your StudentController.java
+
+    /**
+     * Create student manually - Only HR and ADMIN can access
+     */
+    @PostMapping("/create-manual")
+    public ResponseEntity<ApiResponseDto<String>> createStudentManually(
+            @RequestBody Map<String, String> request) {
+
+        try {
+            log.info("=== Manual Student Creation Request ===");
+            log.info("Current user: {}", authService.getCurrentUsername());
+            log.info("Request data: {}", request);
+
+            // Check authentication
+            if (!authService.isAuthenticated()) {
+                log.warn("Unauthenticated attempt to create student");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponseDto.error("Authentication required"));
+            }
+
+            // Check authorization - only HR and ADMIN can create students manually
+            if (!authService.canManageStudents()) {
+                log.warn("Unauthorized attempt to create student by user: {} with role: {}",
+                        authService.getCurrentUsername(), authService.getCurrentUserRole());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponseDto.error("You don't have permission to create students"));
+            }
+
+            // Extract and validate email
+            String email = request.get("email");
+            if (email == null || email.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponseDto.error("Email is required"));
+            }
+            email = email.trim().toLowerCase();
+
+            // Validate email format
+            if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponseDto.error("Invalid email format"));
+            }
+
+            // Extract and validate role
+            String roleStr = request.get("role");
+            if (roleStr == null || roleStr.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponseDto.error("Role is required"));
+            }
+
+            Student.StudentRole role;
+            try {
+                role = Student.StudentRole.valueOf(roleStr.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponseDto.error("Invalid role. Must be ZSGS or PMIS"));
+            }
+
+            // Check if student already exists
+            if (studentRepository.existsByEmail(email)) {
+                log.warn("Attempt to create duplicate student: {}", email);
+                return ResponseEntity.badRequest()
+                        .body(ApiResponseDto.error("A student with this email already exists"));
+            }
+
+            // Create new student
+            Student student = new Student();
+            student.setEmail(email);
+            student.setRole(role);
+            student.setStatus(Student.StudentStatus.ACTIVE);
+            student.setEmailVerified(false);
+            student.setFailedLoginAttempts(0);
+            student.setCreatedAt(LocalDateTime.now());
+            student.setUpdatedAt(LocalDateTime.now());
+
+            // Save to database
+            Student savedStudent = studentRepository.save(student);
+
+            log.info("Successfully created student manually: {} with ID: {} and role: {}",
+                    savedStudent.getEmail(), savedStudent.getId(), savedStudent.getRole());
+
+            return ResponseEntity.ok()
+                    .body(ApiResponseDto.success(
+                            "Student created successfully! Registration email sent.",
+                            savedStudent.getEmail()
+                    ));
+
+        } catch (Exception e) {
+            log.error("Error creating student manually", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDto.error("Failed to create student: " + e.getMessage()));
         }
     }
 

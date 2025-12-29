@@ -8,6 +8,7 @@ import com.kalvitrack_backend.entity.Interviewer;
 import com.kalvitrack_backend.entity.User;
 import com.kalvitrack_backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class InterviewSchedulingService {
+
 
     @Autowired
     private InterviewSessionRepository interviewSessionRepository;
@@ -34,7 +36,8 @@ public class InterviewSchedulingService {
 
     @Autowired
     private UserRepository userRepository;
-
+    @Autowired
+    private SchedulingEmailService emailService;
     /**
      * Schedule an interview (HR functionality)
      */
@@ -81,6 +84,7 @@ public class InterviewSchedulingService {
         LocalTime startTime = LocalTime.parse(dto.getStartTime());
         LocalTime endTime = LocalTime.parse(dto.getEndTime());
 
+
         // Validate time slot is within availability
         if (startTime.isBefore(availability.getStartTime()) || endTime.isAfter(availability.getEndTime())) {
             throw new IllegalArgumentException("Selected time is outside interviewer's availability");
@@ -91,6 +95,7 @@ public class InterviewSchedulingService {
                 dto.getInterviewerId(), dto.getDate(), startTime, endTime)) {
             throw new IllegalArgumentException("Interviewer already has a session at this time");
         }
+        splitAvailabilitySlot(availability, startTime, endTime);
 
         // Create interview session
         InterviewSession session = new InterviewSession();
@@ -107,7 +112,12 @@ public class InterviewSchedulingService {
         InterviewSession savedSession = interviewSessionRepository.save(session);
 
         System.out.println("✅ Interview scheduled successfully with ID: " + savedSession.getSessionId());
-
+        try {
+            emailService.sendInterviewScheduledNotification(savedSession);
+        } catch (Exception e) {
+            System.err.println("⚠️ Email notification failed but interview was scheduled: " + e.getMessage());
+            // Don't throw exception - email failure shouldn't break scheduling
+        }
         // Get additional details for response
         User interviewerUser = userRepository.findById(interviewer.getUserId()).orElse(null);
 
@@ -122,6 +132,56 @@ public class InterviewSchedulingService {
         response.put("status", savedSession.getSessionStatus());
 
         return response;
+    }
+
+    @Transactional
+    private void splitAvailabilitySlot(InterviewerAvailability originalSlot,
+                                       LocalTime bookedStart,
+                                       LocalTime bookedEnd){
+        System.out.println("🔪 Splitting availability slot:");
+        System.out.println("Original: " + originalSlot.getStartTime() + " - " + originalSlot.getEndTime());
+        System.out.println("Booked: " + bookedStart + " - " + bookedEnd);
+
+        // Mark the original slot as booked/inactive
+        originalSlot.setIsBooked(true);
+        originalSlot.setIsActive(false);
+        availabilityRepository.save(originalSlot);
+
+        // Create slot BEFORE the booked time (if exists)
+        if (originalSlot.getStartTime().isBefore(bookedStart)) {
+            InterviewerAvailability beforeSlot = new InterviewerAvailability();
+            beforeSlot.setInterviewerId(originalSlot.getInterviewerId());
+            beforeSlot.setAvailableDate(originalSlot.getAvailableDate());
+            beforeSlot.setStartTime(originalSlot.getStartTime());
+            beforeSlot.setEndTime(bookedStart);
+            beforeSlot.setIsBooked(false);
+            beforeSlot.setIsActive(true);
+            beforeSlot.setSlotDurationMinutes(originalSlot.getSlotDurationMinutes());
+            beforeSlot.setMaxConcurrentInterviews(originalSlot.getMaxConcurrentInterviews());
+            beforeSlot.setNotes(originalSlot.getNotes());
+
+            availabilityRepository.save(beforeSlot);
+            System.out.println("✅ Created BEFORE slot: " + beforeSlot.getStartTime() + " - " + beforeSlot.getEndTime());
+        }
+
+        // Create slot AFTER the booked time (if exists)
+        if (bookedEnd.isBefore(originalSlot.getEndTime())) {
+            InterviewerAvailability afterSlot = new InterviewerAvailability();
+            afterSlot.setInterviewerId(originalSlot.getInterviewerId());
+            afterSlot.setAvailableDate(originalSlot.getAvailableDate());
+            afterSlot.setStartTime(bookedEnd);
+            afterSlot.setEndTime(originalSlot.getEndTime());
+            afterSlot.setIsBooked(false);
+            afterSlot.setIsActive(true);
+            afterSlot.setSlotDurationMinutes(originalSlot.getSlotDurationMinutes());
+            afterSlot.setMaxConcurrentInterviews(originalSlot.getMaxConcurrentInterviews());
+            afterSlot.setNotes(originalSlot.getNotes());
+
+            availabilityRepository.save(afterSlot);
+            System.out.println("✅ Created AFTER slot: " + afterSlot.getStartTime() + " - " + afterSlot.getEndTime());
+        }
+
+        System.out.println("✅ Slot splitting completed");
     }
 
     /**
@@ -167,6 +227,54 @@ public class InterviewSchedulingService {
             sessionData.put("createdAt", session.getCreatedAt());
 
             return sessionData;
+        }).collect(Collectors.toList());
+    }
+    /**
+     * Get assigned students for an interviewer (for panelist portal)
+     */
+    public List<Map<String, Object>> getAssignedStudentsForPanelist(Long interviewerId) {
+        System.out.println("=== FETCHING ASSIGNED STUDENTS FOR PANELIST ===");
+        System.out.println("Interviewer ID: " + interviewerId);
+
+        // Get all active sessions for this interviewer
+        List<InterviewSession> sessions = interviewSessionRepository
+                .findByInterviewerIdAndIsActiveOrderByInterviewDateDesc(interviewerId, true);
+
+        System.out.println("Found " + sessions.size() + " sessions");
+
+        return sessions.stream().map(session -> {
+            Map<String, Object> studentData = new HashMap<>();
+
+            // Get student details
+            Student student = studentRepository.findById(session.getStudentId()).orElse(null);
+            if (student != null) {
+                studentData.put("sessionId", session.getSessionId());
+                studentData.put("studentName", student.getFullName());
+                studentData.put("email", student.getEmail());
+                studentData.put("mobile", student.getMobileNumber());
+                studentData.put("college", student.getCollegeName());
+                studentData.put("role", student.getRole()); // PMIS/ZSGS
+                studentData.put("graduationYear", student.getYearOfGraduation());
+
+                // Interview details
+                studentData.put("interviewDate", session.getInterviewDate());
+                studentData.put("startTime", session.getStartTime().toString());
+                studentData.put("endTime", session.getEndTime().toString());
+                studentData.put("status", session.getSessionStatus().toString());
+                studentData.put("meetingLink", session.getMeetingLink());
+
+                // Feedback details
+                studentData.put("result", session.getInterviewResult() != null
+                        ? session.getInterviewResult().toString()
+                        : null);
+                studentData.put("remarks", session.getRemarks());
+                studentData.put("resultUpdatedAt", session.getResultUpdatedAt());
+
+                System.out.println("Added student: " + student.getFullName() +
+                        " - Status: " + session.getSessionStatus());
+            }
+
+            return studentData;
         }).collect(Collectors.toList());
     }
 

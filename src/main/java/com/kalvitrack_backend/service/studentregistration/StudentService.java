@@ -79,7 +79,7 @@ public class StudentService {
                     .token(token)
                     .email(student.getEmail())
                     .role(role)
-                    .name(student.getFullName())
+                    .fullName(student.getFullName())
                     .success(true)
                     .message("Login successful")
                     .mustResetPassword(false)
@@ -90,6 +90,63 @@ public class StudentService {
         } catch (Exception e) {
             log.error("Student login error for {}: {}", request.getEmail(), e.getMessage());
             return new AdminLoginResponse("Login failed", false);
+        }
+    }
+    // Add this method to your StudentService.java
+
+    /**
+     * Create a student manually (for HR/Admin use)
+     */
+    @Transactional
+    public ApiResponseDto<String> createStudentManually(String email, Student.StudentRole role) {
+        try {
+            log.info("Creating student manually - Email: {}, Role: {}", email, role);
+
+            // Validate email
+            if (email == null || email.trim().isEmpty()) {
+                return ApiResponseDto.error("Email is required");
+            }
+
+            String normalizedEmail = email.trim().toLowerCase();
+
+            // Validate email format
+            if (!isValidEmail(normalizedEmail)) {
+                return ApiResponseDto.error("Invalid email format");
+            }
+
+            // Check if student already exists
+            if (studentRepository.existsByEmail(normalizedEmail)) {
+                log.warn("Student already exists with email: {}", normalizedEmail);
+                return ApiResponseDto.error("A student with this email already exists");
+            }
+
+            // Create new student entity
+            Student student = new Student();
+            student.setEmail(normalizedEmail);
+            student.setRole(role);
+            student.setStatus(Student.StudentStatus.ACTIVE);
+            student.setEmailVerified(false);
+            student.setFailedLoginAttempts(0);
+            student.setCreatedAt(LocalDateTime.now());
+            student.setUpdatedAt(LocalDateTime.now());
+
+            // Save to database
+            Student savedStudent = studentRepository.save(student);
+
+            log.info("Student created successfully - ID: {}, Email: {}, Role: {}",
+                    savedStudent.getId(), savedStudent.getEmail(), savedStudent.getRole());
+
+            // TODO: Send registration email to the student
+            // You can add email service call here if you have email functionality
+
+            return ApiResponseDto.success(
+                    "Student created successfully! The student can now complete their registration.",
+                    savedStudent.getEmail()
+            );
+
+        } catch (Exception e) {
+            log.error("Error creating student manually: {}", email, e);
+            return ApiResponseDto.error("Failed to create student: " + e.getMessage());
         }
     }
 
@@ -253,7 +310,6 @@ public class StudentService {
 
             // CRITICAL: Explicitly set registration as complete
             // You need to add this method to your Student entity if it doesn't exist
-            student.setRegistrationComplete(true);
 
             log.info("About to save student with details:");
             log.info("  - Full Name: {}", student.getFullName());

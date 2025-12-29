@@ -61,6 +61,7 @@ public class WebSecurityConfig {
 
                         // ✅ PROTECTED STUDENT ENDPOINTS - After permitAll
                         .requestMatchers("/api/students/upload-csv").hasAnyRole("ADMIN", "HR","ZSGS","PMIS")
+                        .requestMatchers("/api/students/create-manual").hasAnyRole("ADMIN", "HR")  // ADD THIS LINE
                         .requestMatchers("/api/students/statistics").hasAnyRole("ADMIN", "HR")
                         .requestMatchers("/api/students/incomplete").hasAnyRole("ADMIN", "HR")
                         .requestMatchers("/api/students/role/**").hasAnyRole("ADMIN", "HR")
@@ -97,13 +98,13 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/panelists/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN","FACULTY")
 
                         // INTERVIEW ENDPOINTS
-                        .requestMatchers(HttpMethod.GET, "/api/interviews").hasAnyRole("HR", "ADMIN", "FACULTY")
-                        .requestMatchers(HttpMethod.POST, "/api/interviews/**").hasAnyRole("HR", "ADMIN", "FACULTY")
-                        .requestMatchers(HttpMethod.PUT, "/api/interviews/**").hasAnyRole("HR", "ADMIN", "FACULTY")
-                        .requestMatchers(HttpMethod.DELETE, "/api/interviews/**").hasAnyRole("HR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/interviews").hasAnyRole("HR", "ADMIN", "FACULTY","INTERVIEW_PANELIST")
+                        .requestMatchers(HttpMethod.POST, "/api/interviews/**").hasAnyRole("HR", "ADMIN", "FACULTY","INTERVIEW_PANELIST")
+                        .requestMatchers(HttpMethod.PUT, "/api/interviews/**").hasAnyRole("HR", "ADMIN", "FACULTY","INTERVIEW_PANELIST")
+                        .requestMatchers(HttpMethod.DELETE, "/api/interviews/**").hasAnyRole("HR", "ADMIN","INTERVIEW_PANELIST")
                         .requestMatchers("/api/interviews/my-interviews").hasAnyRole("PMIS", "ADMIN")
                         .requestMatchers("/api/interviews/student/**").hasAnyRole("PMIS", "HR", "ADMIN", "FACULTY")
-                        .requestMatchers("/api/interviews/panelist/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN")
+                        .requestMatchers("/api/interviews/panelist/**").hasAnyRole("INTERVIEW_PANELIST", "HR", "ADMIN" ,"FACULTY")
 
                         // ROLE-BASED AUTHORIZATION
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

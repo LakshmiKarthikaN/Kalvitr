@@ -72,6 +72,7 @@ public class AdminController {
                     "id", user.getUserId(),
                     "email", user.getEmail(),
                     "role", user.getRole(),
+                        "fullName",user.getFullName(),
                     "status", user.getStatus()
             ));
 
@@ -126,7 +127,8 @@ public class AdminController {
             response.put("admin", Map.of(
                     "id", savedAdmin.getUserId(),
                     "email", savedAdmin.getEmail(),
-                    "role", savedAdmin.getRole()
+                    "role", savedAdmin.getRole(),
+                    "fullName",savedAdmin.getFullName()
             ));
 
             return ResponseEntity.ok(response);

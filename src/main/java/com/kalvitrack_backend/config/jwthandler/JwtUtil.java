@@ -15,7 +15,6 @@ import java.util.Date;
 public class JwtUtil {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
-    // Read from application.prod.properties - SECURE 256-bit secret
     @Value("${jwt.secret:mySecretKeyForKalviTrackAppThatIsAtLeast32CharactersLongForHS256Algorithm}")
     private String SECRET;
 
@@ -26,8 +25,8 @@ public class JwtUtil {
     }
     // Update this method to include userId parameter
     // Remove the old generateToken method and keep only this one
-    public String generateToken(String email, String role, Long userId) {
-        logger.info("Generating token for email: {} with role: {} and userId: {}", email, role, userId);
+    public String generateToken(String email, String role, Long userId ) {
+        logger.info("Generating token for email: {} with role: {} and userId: {} and name : {}", email, role, userId);
 
         if (userId == null) {
             throw new IllegalArgumentException("userId cannot be null");
@@ -38,7 +37,7 @@ public class JwtUtil {
                     .setSubject(email)
                     .claim("role", role)
                     .claim("email", email)
-                    .claim("userId", userId)  // ← Critical: Include userId
+                    .claim("userId", userId)
                     .setIssuedAt(new Date())
                     .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
                     .signWith(SignatureAlgorithm.HS256, SECRET)
